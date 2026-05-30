@@ -21,12 +21,27 @@ const PORT = process.env.PORT || 3000;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+let supabase = null;
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.error("❌ CRITICAL ERROR: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in the .env file.");
-  process.exit(1);
+  console.error("❌ CRITICAL ERROR: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are missing from environment variables.");
+} else {
+  try {
+    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  } catch (e) {
+    console.error("❌ Failed to initialize Supabase client:", e.message);
+  }
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+// Middleware to prevent crash if database is not configured
+app.use('/api', (req, res, next) => {
+  if (req.path === '/config') return next();
+  if (!supabase) {
+    return res.status(500).json({ 
+      error: "Database configuration is missing. Please add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your Vercel Project Settings." 
+    });
+  }
+  next();
+});
 
 // Rate limiting via Supabase table (persists across serverless cold starts)
 const LOGIN_MAX_ATTEMPTS = 5;
