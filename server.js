@@ -8,8 +8,12 @@ const crypto = require('crypto');
 
 const app = express();
 
-if (!fs.existsSync('public/uploads')) {
-  fs.mkdirSync('public/uploads', { recursive: true });
+if (!process.env.VERCEL && !fs.existsSync('public/uploads')) {
+  try {
+    fs.mkdirSync('public/uploads', { recursive: true });
+  } catch (e) {
+    console.error('Failed to create public/uploads:', e.message);
+  }
 }
 const PORT = process.env.PORT || 3000;
 
@@ -101,8 +105,14 @@ app.use('/uploads', express.static('public/uploads'));
 
 // Multer config: disk storage (prevents OOM on concurrent uploads)
 const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp']);
-const uploadDir = path.join(__dirname, 'public', 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+const uploadDir = process.env.VERCEL ? '/tmp' : path.join(__dirname, 'public', 'uploads');
+if (!process.env.VERCEL && !fs.existsSync(uploadDir)) {
+  try {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  } catch (e) {
+    console.error('Failed to create uploadDir:', e.message);
+  }
+}
 
 const storage = multer.diskStorage({
   destination: uploadDir,
