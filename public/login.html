@@ -125,7 +125,6 @@
 
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (!supabaseClient) return;
 
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
@@ -137,20 +136,21 @@
       errEl.classList.add('hidden');
 
       try {
-        const { data, error } = await supabaseClient.auth.signInWithPassword({
-          email,
-          password
+        const res = await fetch(`${API_BASE}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
         });
+        const data = await res.json();
 
-        if (error) {
-          errEl.textContent = error.message || 'Login failed';
+        if (!res.ok) {
+          errEl.textContent = data.error || 'Login failed';
           errEl.classList.remove('hidden');
           return;
         }
 
-        // Save token for legacy endpoints
-        localStorage.setItem('campt_token', data.session.access_token);
-        localStorage.setItem('campt_user', JSON.stringify({ email: data.user.email }));
+        localStorage.setItem('campt_token', data.token);
+        localStorage.setItem('campt_user', JSON.stringify(data.user));
         window.location.href = '/admin.html';
       } catch (err) {
         errEl.textContent = 'Connection error. Is the server running?';

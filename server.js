@@ -24,21 +24,49 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-// Rate limiting store (in-memory, reset on restart)
-const loginAttempts = new Map();
+// Rate limiting via Supabase table (persists across serverless cold starts)
 const LOGIN_MAX_ATTEMPTS = 5;
-const LOGIN_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+const LOGIN_WINDOW_MS = 10 * 60 * 1000;
 
-function checkRateLimit(ip) {
-  const now = Date.now();
-  const attempts = loginAttempts.get(ip) || [];
-  const recent = attempts.filter(t => now - t < LOGIN_WINDOW_MS);
-  loginAttempts.set(ip, recent);
-  if (recent.length >= LOGIN_MAX_ATTEMPTS) {
-    return false;
+async function checkRateLimit(ip) {
+  const { data, error } = await supabase
+    .from('login_attempts')
+    .select('attempts, last_attempt')
+    .eq('ip', ip)
+    .single();
+
+  if (error || !data) return { allowed: true };
+
+  const elapsed = Date.now() - new Date(data.last_attempt).getTime();
+  if (elapsed > LOGIN_WINDOW_MS) {
+    await supabase.from('login_attempts').delete().eq('ip', ip);
+    return { allowed: true };
   }
-  recent.push(now);
-  return true;
+
+  if (data.attempts >= LOGIN_MAX_ATTEMPTS) {
+    return { allowed: false, remaining: LOGIN_WINDOW_MS - elapsed };
+  }
+  return { allowed: true };
+}
+
+async function recordLoginAttempt(ip, success) {
+  if (success) {
+    await supabase.from('login_attempts').delete().eq('ip', ip);
+    return;
+  }
+  const { data } = await supabase
+    .from('login_attempts')
+    .select('attempts')
+    .eq('ip', ip)
+    .single();
+  if (data) {
+    await supabase.from('login_attempts')
+      .update({ attempts: data.attempts + 1, last_attempt: new Date().toISOString() })
+      .eq('ip', ip);
+  } else {
+    await supabase.from('login_attempts')
+      .insert({ ip, attempts: 1, last_attempt: new Date().toISOString() });
+  }
 }
 
 // Middleware
@@ -71,9 +99,18 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.static('public', { maxAge: 0, etag: false }));
 app.use('/uploads', express.static('public/uploads'));
 
-// Multer config for image uploads
+// Multer config: disk storage (prevents OOM on concurrent uploads)
 const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp']);
-const storage = multer.memoryStorage();
+const uploadDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: uploadDir,
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, Date.now() + '-' + crypto.randomBytes(8).toString('hex') + ext);
+  }
+});
 const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 },
@@ -87,26 +124,30 @@ const upload = multer({
 });
 
 
-async function uploadToSupabase(file) {
-  const ext = path.extname(file.originalname).toLowerCase();
+async function uploadToSupabase(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
   const uniqueName = Date.now() + '-' + crypto.randomBytes(8).toString('hex') + ext;
-  
+
+  const fileBuffer = fs.readFileSync(filePath);
   const { data, error } = await supabase.storage
     .from('cards-images')
-    .upload(uniqueName, file.buffer, {
-      contentType: file.mimetype,
+    .upload(uniqueName, fileBuffer, {
+      contentType: `image/${ext.replace('.', '')}`,
       upsert: false
     });
-    
+
+  // Clean up local temp file
+  try { fs.unlinkSync(filePath); } catch(e) {}
+
   if (error) {
     console.error('Supabase upload error:', error);
     throw new Error('Failed to upload image to storage');
   }
-  
+
   const { data: publicUrlData } = supabase.storage
     .from('cards-images')
     .getPublicUrl(uniqueName);
-    
+
   return publicUrlData.publicUrl;
 }
 
@@ -119,6 +160,28 @@ app.get('/api/config', (req, res) => {
     supabaseUrl: process.env.SUPABASE_URL,
     supabaseAnonKey: process.env.SUPABASE_ANON_KEY
   });
+});
+
+// ========== SERVER-SIDE LOGIN (with rate limiting) ==========
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+
+  const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip;
+  const rateCheck = await checkRateLimit(ip);
+  if (!rateCheck.allowed) {
+    const mins = Math.ceil((rateCheck.remaining || 0) / 60000);
+    return res.status(429).json({ error: `Too many attempts. Try again in ${mins} minute(s).` });
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    await recordLoginAttempt(ip, false);
+    return res.status(401).json({ error: 'Invalid email or password' });
+  }
+
+  await recordLoginAttempt(ip, true);
+  res.json({ token: data.session.access_token, user: { email: data.user.email, id: data.user.id } });
 });
 
 // ========== AUTH MIDDLEWARE ==========
@@ -417,7 +480,7 @@ app.post('/api/admin/cards', authenticateToken, upload.single('image'), async (r
   let image_url = '';
   if (req.file) {
     try {
-      image_url = await uploadToSupabase(req.file);
+      image_url = await uploadToSupabase(req.file.path);
     } catch (err) {
       return res.status(500).json({ error: 'Image upload failed' });
     }
@@ -439,7 +502,7 @@ app.put('/api/admin/cards/:id', authenticateToken, upload.single('image'), async
   let image_url = existing.image_url;
   if (req.file) {
     try {
-      image_url = await uploadToSupabase(req.file);
+      image_url = await uploadToSupabase(req.file.path);
       // We could optionally delete the old image from Supabase here
     } catch (err) {
       return res.status(500).json({ error: 'Image upload failed' });
