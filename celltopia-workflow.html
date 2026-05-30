@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Celltopia WhatsApp Sales Agent - Workflow</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'JetBrains Mono', monospace; background: #020617; min-height: 100vh; padding: 2rem; color: white; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header { margin-bottom: 2rem; }
+    .header-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+    .pulse-dot { width: 12px; height: 12px; background: #22d3ee; border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em; }
+    .subtitle { color: #94a3b8; font-size: 0.875rem; margin-left: 1.75rem; }
+    .diagram-container { background: rgba(15, 23, 42, 0.5); border-radius: 1rem; border: 1px solid #1e293b; padding: 1.5rem; overflow-x: auto; }
+    svg { width: 100%; min-width: 900px; display: block; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 2rem; }
+    .card { background: rgba(15, 23, 42, 0.5); border-radius: 0.75rem; border: 1px solid #1e293b; padding: 1.25rem; }
+    .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .card-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .card-dot.cyan { background: #22d3ee; } .card-dot.emerald { background: #34d399; } .card-dot.violet { background: #a78bfa; }
+    .card-dot.amber { background: #fbbf24; } .card-dot.rose { background: #fb7185; } .card-dot.orange { background: #fb923c; }
+    .card h3 { font-size: 0.875rem; font-weight: 600; }
+    .card ul { list-style: none; color: #94a3b8; font-size: 0.75rem; }
+    .card li { margin-bottom: 0.375rem; }
+    .footer { text-align: center; margin-top: 1.5rem; color: #475569; font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-row">
+        <div class="pulse-dot"></div>
+        <h1>Celltopia WhatsApp Sales Agent — Workflow</h1>
+      </div>
+      <p class="subtitle">Autonomous lead qualification → follow-up → handoff → learning loop</p>
+    </div>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 820">
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+          </marker>
+          <marker id="arrow-emerald" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#34d399" />
+          </marker>
+          <marker id="arrow-cyan" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#22d3ee" />
+          </marker>
+          <marker id="arrow-amber" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fbbf24" />
+          </marker>
+          <marker id="arrow-rose" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fb7185" />
+          </marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+
+        <rect width="100%" height="100%" fill="url(#grid)" />
+
+        <!-- ============ EXTERNAL SOURCES ============ -->
+
+        <!-- Meta Ads -->
+        <rect x="30" y="50" width="130" height="55" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="95" y="72" fill="white" font-size="11" font-weight="600" text-anchor="middle">Meta Ads</text>
+        <text x="95" y="88" fill="#94a3b8" font-size="9" text-anchor="middle">Lead Form → Webhook</text>
+
+        <!-- WA Incoming -->
+        <rect x="30" y="180" width="130" height="55" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="95" y="202" fill="white" font-size="11" font-weight="600" text-anchor="middle">Customer WA</text>
+        <text x="95" y="218" fill="#94a3b8" font-size="9" text-anchor="middle">Incoming Message</text>
+
+        <!-- Inventory Source -->
+        <rect x="30" y="310" width="130" height="55" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="95" y="332" fill="white" font-size="11" font-weight="600" text-anchor="middle">Inventory</text>
+        <text x="95" y="348" fill="#94a3b8" font-size="9" text-anchor="middle">Website / Sheets</text>
+
+        <!-- Owner -->
+        <rect x="30" y="680" width="130" height="55" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="95" y="702" fill="white" font-size="11" font-weight="600" text-anchor="middle">Owner</text>
+        <text x="95" y="718" fill="#94a3b8" font-size="9" text-anchor="middle">Manual Closing</text>
+
+        <!-- ============ HERMES AGENT (main box) ============ -->
+        <rect x="230" y="40" width="540" height="740" rx="12" fill="rgba(6, 78, 59, 0.15)" stroke="#34d399" stroke-width="1.5" stroke-dasharray="8,4"/>
+        <text x="245" y="60" fill="#34d399" font-size="10" font-weight="600">HERMES AGENT — Celltopia WhatsApp Bot</text>
+
+        <!-- Step 1: Lead Capture -->
+        <rect x="260" y="75" width="200" height="60" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="360" y="98" fill="white" font-size="11" font-weight="600" text-anchor="middle">① Lead Capture</text>
+        <text x="360" y="114" fill="#94a3b8" font-size="9" text-anchor="middle">Parse webhook → extract name, WA, interest</text>
+        <text x="360" y="128" fill="#22d3ee" font-size="8" text-anchor="middle">&lt; 5 sec response time</text>
+
+        <!-- Step 2: Qualify -->
+        <rect x="260" y="175" width="200" height="60" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="360" y="198" fill="white" font-size="11" font-weight="600" text-anchor="middle">② Qualification</text>
+        <text x="360" y="214" fill="#94a3b8" font-size="9" text-anchor="middle">Budget range, model, urgency timeline</text>
+        <text x="360" y="228" fill="#34d399" font-size="8" text-anchor="middle">2-3 questions via WA</text>
+
+        <!-- Step 3: Inventory Check -->
+        <rect x="260" y="275" width="200" height="60" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="360" y="298" fill="white" font-size="11" font-weight="600" text-anchor="middle">③ Inventory Check</text>
+        <text x="360" y="314" fill="#94a3b8" font-size="9" text-anchor="middle">Scrape site / read Sheets</text>
+        <text x="360" y="328" fill="#fbbf24" font-size="8" text-anchor="middle">Match model + condition + price</text>
+
+        <!-- Step 4: Score + Route -->
+        <rect x="260" y="375" width="200" height="60" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="360" y="398" fill="white" font-size="11" font-weight="600" text-anchor="middle">④ Score + Route</text>
+        <text x="360" y="414" fill="#94a3b8" font-size="9" text-anchor="middle">HOT / WARM / COLD classification</text>
+        <text x="360" y="428" fill="#34d399" font-size="8" text-anchor="middle">Budget match + urgency = HOT</text>
+
+        <!-- Step 5: Respond -->
+        <rect x="260" y="475" width="200" height="60" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="360" y="498" fill="white" font-size="11" font-weight="600" text-anchor="middle">⑤ WA Response</text>
+        <text x="360" y="514" fill="#94a3b8" font-size="9" text-anchor="middle">Send match details + CTA</text>
+        <text x="360" y="528" fill="#34d399" font-size="8" text-anchor="middle">Natural Indonesian, not robotic</text>
+
+        <!-- Step 6: Follow-up -->
+        <rect x="260" y="575" width="200" height="60" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="360" y="598" fill="white" font-size="11" font-weight="600" text-anchor="middle">⑥ Follow-up Sequence</text>
+        <text x="360" y="614" fill="#94a3b8" font-size="9" text-anchor="middle">5-7 touches over 14 days</text>
+        <text x="360" y="628" fill="#34d399" font-size="8" text-anchor="middle">Cron + state machine</text>
+
+        <!-- Step 7: Learn -->
+        <rect x="260" y="675" width="200" height="60" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="360" y="698" fill="white" font-size="11" font-weight="600" text-anchor="middle">⑦ Learning Loop</text>
+        <text x="360" y="714" fill="#94a3b8" font-size="9" text-anchor="middle">Log owner closing patterns</text>
+        <text x="360" y="728" fill="#fbbf24" font-size="8" text-anchor="middle">Refine prompts over time</text>
+
+        <!-- ============ RIGHT SIDE: Output Routes ============ -->
+
+        <!-- HOT Route -->
+        <rect x="520" y="365" width="230" height="70" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="635" y="388" fill="white" font-size="11" font-weight="600" text-anchor="middle">🔥 HOT LEAD</text>
+        <text x="635" y="404" fill="#94a3b8" font-size="9" text-anchor="middle">→ WA owner: "Closing needed"</text>
+        <text x="635" y="420" fill="#fb7185" font-size="8" text-anchor="middle">Auto-share lead details + conversation</text>
+
+        <!-- WARM Route -->
+        <rect x="520" y="470" width="230" height="70" rx="6" fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="635" y="493" fill="white" font-size="11" font-weight="600" text-anchor="middle">🟡 WARM LEAD</text>
+        <text x="635" y="509" fill="#94a3b8" font-size="9" text-anchor="middle">→ Nurture drip (price info, availability)</text>
+        <text x="635" y="525" fill="#fb923c" font-size="8" text-anchor="middle">Follow-up Day 3, 7, 14</text>
+
+        <!-- COLD Route -->
+        <rect x="520" y="575" width="230" height="70" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="635" y="598" fill="white" font-size="11" font-weight="600" text-anchor="middle">⚫ COLD LEAD</text>
+        <text x="635" y="614" fill="#94a3b8" font-size="9" text-anchor="middle">→ Re-engagement later (promo, new stock)</text>
+        <text x="635" y="630" fill="#94a3b8" font-size="8" text-anchor="middle">Monthly check-in or broadcast</text>
+
+        <!-- Database -->
+        <rect x="520" y="680" width="230" height="60" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="635" y="703" fill="white" font-size="11" font-weight="600" text-anchor="middle">Lead Database</text>
+        <text x="635" y="719" fill="#94a3b8" font-size="9" text-anchor="middle">SQLite / Supabase — all leads, logs, patterns</text>
+        <text x="635" y="733" fill="#a78bfa" font-size="8" text-anchor="middle">Analytics + ROI tracking</text>
+
+        <!-- ============ ARROWS ============ -->
+
+        <!-- Meta Ads → Lead Capture -->
+        <line x1="160" y1="77" x2="258" y2="77" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrow-cyan)"/>
+        <text x="210" y="70" fill="#22d3ee" font-size="8" text-anchor="middle">webhook</text>
+
+        <!-- WA Incoming → Qualify -->
+        <path d="M 160 207 L 200 207 Q 220 207 220 185 L 258 185" fill="none" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrow-cyan)"/>
+        <text x="200" y="200" fill="#22d3ee" font-size="8" text-anchor="middle">msg</text>
+
+        <!-- Inventory → Inventory Check -->
+        <line x1="160" y1="337" x2="258" y2="337" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrow-amber)"/>
+
+        <!-- Lead Capture → Qualify -->
+        <line x1="360" y1="135" x2="360" y2="173" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrow-cyan)"/>
+
+        <!-- Qualify → Inventory Check -->
+        <line x1="360" y1="235" x2="360" y2="273" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
+
+        <!-- Inventory Check → Score -->
+        <line x1="360" y1="335" x2="360" y2="373" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrow-amber)"/>
+
+        <!-- Score → HOT -->
+        <line x1="460" y1="400" x2="518" y2="400" stroke="#fb7185" stroke-width="1.5" marker-end="url(#arrow-rose)"/>
+        <text x="490" y="393" fill="#fb7185" font-size="8" text-anchor="middle">HOT</text>
+
+        <!-- Score → WARM -->
+        <path d="M 460 410 L 490 410 Q 510 410 510 440 L 518 485" fill="none" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrow-amber)"/>
+        <text x="515" y="445" fill="#fb923c" font-size="8" text-anchor="middle">WARM</text>
+
+        <!-- Score → COLD -->
+        <path d="M 460 420 L 490 420 Q 510 420 510 540 L 518 600" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+        <!-- Score → Respond -->
+        <line x1="360" y1="435" x2="360" y2="473" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
+
+        <!-- Respond → Follow-up -->
+        <line x1="360" y1="535" x2="360" y2="573" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
+
+        <!-- Follow-up → Learn -->
+        <line x1="360" y1="635" x2="360" y2="673" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
+
+        <!-- HOT → Owner -->
+        <path d="M 635 435 L 635 500 Q 635 530 600 540 L 160 540 Q 100 540 100 600 L 95 678" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrow-rose)"/>
+        <text x="400" y="533" fill="#fb7185" font-size="8" text-anchor="middle">notif + handoff</text>
+
+        <!-- Learn → DB -->
+        <line x1="460" y1="700" x2="518" y2="700" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrow-amber)"/>
+
+        <!-- WA Response → Customer WA -->
+        <path d="M 260 505 L 200 505 Q 160 505 160 260 L 160 235" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
+        <text x="155" y="400" fill="#34d399" font-size="8" text-anchor="middle">reply</text>
+
+        <!-- ============ LEGEND ============ -->
+        <text x="800" y="55" fill="white" font-size="10" font-weight="600">Legend</text>
+        <rect x="800" y="67" width="16" height="10" rx="2" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
+        <text x="822" y="75" fill="#94a3b8" font-size="8">Input / Trigger</text>
+        <rect x="800" y="83" width="16" height="10" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1"/>
+        <text x="822" y="91" fill="#94a3b8" font-size="8">Agent Step</text>
+        <rect x="800" y="99" width="16" height="10" rx="2" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
+        <text x="822" y="107" fill="#94a3b8" font-size="8">External Data</text>
+        <rect x="800" y="115" width="16" height="10" rx="2" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1"/>
+        <text x="822" y="123" fill="#94a3b8" font-size="8">Human Handoff</text>
+        <rect x="800" y="131" width="16" height="10" rx="2" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1"/>
+        <text x="822" y="139" fill="#94a3b8" font-size="8">Database</text>
+        <line x1="800" y1="155" x2="816" y2="155" stroke="#fb7185" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="822" y="158" fill="#94a3b8" font-size="8">Handoff Flow</text>
+
+      </svg>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot rose"></div>
+          <h3>Phase 1 — MVP (Week 1-2)</h3>
+        </div>
+        <ul>
+          <li>• Meta lead webhook → instant WA reply</li>
+          <li>• 2-3 question qualification flow</li>
+          <li>• Inventory check (scrape / Sheets)</li>
+          <li>• Hot lead → owner notif via WA</li>
+          <li>• Lead log in Sheets / SQLite</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot amber"></div>
+          <h3>Phase 2 — Smart (Week 3-4)</h3>
+        </div>
+        <ul>
+          <li>• Auto follow-up sequence (5-7 touches)</li>
+          <li>• Lead scoring refinement</li>
+          <li>• Telegram tracking dashboard</li>
+          <li>• ROI proof-of-concept</li>
+          <li>• Log owner closing patterns</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot violet"></div>
+          <h3>Phase 3 — Auto (Month 2+)</h3>
+        </div>
+        <ul>
+          <li>• Agent suggests closing responses</li>
+          <li>• Owner approve → partial autonomy</li>
+          <li>• Full auto for deals under threshold</li>
+          <li>• Analytics dashboard</li>
+          <li>• Conversion rate optimization</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="footer">
+      Celltopia WhatsApp Sales Agent • 1 Agent, State Machine Design • qwen3.6-plus primary, claude-sonnet-4 for HOT leads
+    </p>
+  </div>
+</body>
+</html>
