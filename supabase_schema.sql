@@ -1,8 +1,16 @@
+-- Create login_attempts table if not exists for server-side rate limiting
+CREATE TABLE IF NOT EXISTS public.login_attempts (
+  ip TEXT NOT NULL PRIMARY KEY,
+  attempts INTEGER DEFAULT 1,
+  last_attempt TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Enable Row Level Security (RLS) on all tables
 ALTER TABLE public.cards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.login_attempts ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies if they exist (to avoid duplication errors)
 DROP POLICY IF EXISTS "Allow public read access to cards" ON public.cards;
