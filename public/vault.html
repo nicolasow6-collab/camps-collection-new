@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Vault - Campt's Collection</title>
+  <!-- Open Graph / Link Preview Tags -->
+  <meta property="og:title" content="Campt's Collection - Premium Pokémon Vault">
+  <meta property="og:description" content="Koleksi eksklusif kartu Pokémon rare, tersimpan aman dalam Midnight Vault.">
+  <meta property="og:image" content="https://camptscollection.vercel.app/og-preview.png">
+  <meta property="og:url" content="https://camptscollection.vercel.app/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Campt's Collection - Premium Pokémon Vault">
+  <meta name="twitter:description" content="Koleksi eksklusif kartu Pokémon rare, tersimpan aman dalam Midnight Vault.">
+  <meta name="twitter:image" content="https://camptscollection.vercel.app/og-preview.png">
+
+  <link rel="icon" type="image/svg+xml" href="/pokeball.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+          colors: {
+            poke: { red: '#CC0000', darkred: '#9E0000', black: '#1a1a1a', gray: '#f5f5f5' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root { --ease-impeccable: cubic-bezier(0.16, 1, 0.3, 1); }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    
+    /* Card slab — dense vault grid */
+    .card-slab {
+      background: #fff;
+      border: 1px solid #e4e4e7;
+      border-radius: 6px;
+      overflow: hidden;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                  border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+    .card-slab:hover {
+      transform: translateY(-2px);
+      border-color: #d4d4d8;
+    }
+    
+    .card-slab-image {
+      background: #f5f5f5;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* Grading badge — impeccable spec */
+    .grading-badge {
+      position: absolute;
+      top: 6px; left: 6px;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(4px);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 9px;
+      font-weight: 700;
+      color: #444;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      z-index: 10;
+    }
+    
+    /* Sold overlay */
+    .sold-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(2px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sold-overlay span {
+      background: #fff;
+      color: #111;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+    
+    .card-slab-info {
+      padding: 8px 10px;
+      border-top: 1px solid #f2f2f2;
+    }
+    
+    /* Filter pills — impeccable spec */
+    .filter-btn {
+      padding: 0.375rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      border-radius: 9999px;
+      border: 1px solid #e4e4e7;
+      background: #fff;
+      color: #71717a;
+      white-space: nowrap;
+      transition: background-color 0.2s var(--ease-impeccable),
+                  color 0.2s var(--ease-impeccable),
+                  border-color 0.2s var(--ease-impeccable),
+                  transform 0.15s var(--ease-impeccable);
+    }
+    .filter-btn:hover { border-color: #a1a1aa; color: #18181b; }
+    .filter-btn:active { transform: scale(0.97); }
+    .filter-active { background-color: #18181b !important; color: #fff !important; border-color: #18181b !important; }
+    
+    /* Sort dropdown */
+    .sort-option {
+      transition: background-color 0.15s var(--ease-impeccable);
+    }
+    .sort-option.sort-active {
+      font-weight: 600;
+      color: #111;
+      background: #f5f5f5;
+    }
+
+    /* Card entrance */
+    .card-enter { animation: fadeUp 0.35s var(--ease-impeccable) both; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    html { scroll-behavior: smooth; }
+  
+    
+    /* Dark Mode overwrites for Vault Custom CSS */
+    .dark .card-slab {
+      background: #27272a;
+      border-color: #3f3f46;
+    }
+    .dark .card-slab:hover {
+      border-color: #52525b;
+    }
+    .dark .card-slab-image {
+      background: #18181b;
+    }
+    .dark .card-slab-info {
+      border-top-color: #3f3f46;
+    }
+    .dark .card-slab-info h3 {
+      color: #f4f4f5 !important;
+    }
+    .dark .filter-btn {
+      background: #27272a;
+      border-color: #3f3f46;
+      color: #a1a1aa;
+    }
+    .dark .filter-btn:hover { border-color: #71717a; color: #f4f4f5; }
+    .dark .filter-active { background-color: #f4f4f5 !important; color: #18181b !important; border-color: #f4f4f5 !important; }
+    
+    .dark .grading-badge {
+      background: rgba(39, 39, 42, 0.95);
+      color: #e4e4e7;
+    }
+    .dark .sort-option.sort-active {
+      color: #f4f4f5;
+    }
+
+  </style>
+  <link rel="stylesheet" href="/global.css">
+
+  <script>
+    if (localStorage.getItem('color-theme') === 'dark') {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
+</head>
+<body class="text-[#1a1a1a] bg-white dark:bg-zinc-800 min-h-screen dark:bg-zinc-900 dark:text-zinc-100 transition-colors duration-500">
+  <div class="overflow-x-hidden">
+
+  <img src="/images/snorlax_voxel.png" class="absolute top-40 right-0 w-48 opacity-15 mix-blend-multiply dark:opacity-40 dark:mix-blend-normal pointer-events-none animate-[float_12s_ease-in-out_infinite] z-0" style="filter: contrast(1.1) brightness(1.05);" alt="">
+  <img src="/images/bulbasaur_voxel.png" class="absolute top-96 left-0 w-32 opacity-15 mix-blend-multiply dark:opacity-40 dark:mix-blend-normal pointer-events-none animate-[float_8s_ease-in-out_infinite] z-0" style="filter: contrast(1.1) brightness(1.05);" alt="">
+  <img src="/images/mew_pointing.png" class="absolute bottom-60 right-0 w-32 opacity-15 mix-blend-multiply dark:opacity-40 dark:mix-blend-normal pointer-events-none animate-[float_6s_ease-in-out_infinite] z-0" style="filter: contrast(1.1) brightness(1.05);" alt="">
+  <img src="/images/eevee_voxel.png" class="absolute bottom-20 left-0 w-24 opacity-15 mix-blend-multiply dark:opacity-40 dark:mix-blend-normal pointer-events-none animate-[float_7s_ease-in-out_infinite] z-0" style="filter: contrast(1.1) brightness(1.05);" alt="">
+
+
+
+  
+
+
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-20 right-6 z-[100] flex flex-col gap-3"></div>
+
+  <!-- Navbar — same as index.html -->
+  <nav class="border-b border-zinc-200 dark:border-zinc-700 sticky top-0 bg-white dark:bg-zinc-800/90 backdrop-blur-sm z-50">
+    <div class="max-w-7xl mx-auto px-6 py-3 md:h-14 flex flex-wrap md:grid md:grid-cols-3 items-center justify-between gap-y-3">
+      <div class="flex items-center gap-4">
+        <a href="/" class="flex items-center gap-2.5">
+          <img src="/logo.jpg" alt="Campt's Collection" class="h-7 w-auto dark:bg-white dark:p-1 dark:rounded-lg">
+        </a>
+      </div>
+      <div class="flex items-center justify-center gap-4 md:gap-6 text-sm font-medium text-zinc-400 dark:text-zinc-500 w-full md:w-auto order-3 md:order-none">
+        <a href="/vault.html" class="text-zinc-900 dark:text-zinc-100 font-medium">The Vault</a>
+        <a href="/orders.html" class="hover:text-zinc-900 dark:text-zinc-100 transition-colors">Orders</a>
+        <a href="/#faq" class="hover:text-zinc-900 dark:text-zinc-100 transition-colors">FAQ</a>
+      </div>
+      <div class="flex items-center justify-end gap-3">
+        <button id="cart-btn" class="relative flex items-center gap-1.5 text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:text-zinc-100 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/>
+          </svg>
+          <span>Cart (<span id="cart-count">0</span>)</span>
+        </button>
+        <a href="/login.html" id="nav-login" class="px-3.5 py-1.5 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors">Login</a>
+        <div id="nav-avatar" class="hidden flex items-center gap-3">
+          <a href="/admin.html" class="text-xs text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:text-zinc-100 transition-colors">Dashboard</a>
+          <div class="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-sm font-semibold cursor-pointer hover:bg-zinc-200 transition-colors" onclick="window.location.href='/admin.html'" title="Admin">A</div>
+          <button id="logout-btn" class="text-xs text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:text-zinc-100 transition-colors">Logout</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  
+  <!-- Floating Cart Button -->
+  <button id="floating-cart-btn" class="fixed top-20 right-6 w-12 h-12 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-full shadow-2xl flex items-center justify-center z-40 transition-all duration-300 transform scale-0 origin-center hover:scale-110">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+    <span id="floating-cart-count" class="absolute -top-1 -right-1 bg-poke-red text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-800 transition-all">0</span>
+  </button>
+
+  <!-- Cart Slide Panel -->
+  <div id="cart-modal" class="hidden fixed inset-0 bg-black/40 z-50">
+    <div id="cart-panel" class="absolute right-0 top-0 h-full w-full max-w-md bg-white dark:bg-zinc-800 transform translate-x-full transition-transform duration-300" style="transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1)">
+      <div class="flex items-center justify-between px-6 py-5 border-b border-zinc-200 dark:border-zinc-700">
+        <h3 class="font-semibold text-lg tracking-tight">Cart</h3>
+        <button id="close-cart" class="text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:text-zinc-100 text-xl transition-colors">&times;</button>
+      </div>
+      <div id="cart-items" class="px-6 overflow-y-auto" style="height: calc(100vh - 200px);">
+        <p class="text-zinc-400 dark:text-zinc-500 text-center py-12 text-sm">Cart is empty</p>
+      </div>
+      <div class="border-t border-zinc-200 dark:border-zinc-700 px-6 py-5">
+        <div class="flex justify-between mb-5">
+          <span class="font-medium text-sm text-zinc-600 dark:text-zinc-400 dark:text-zinc-500">Total</span>
+          <span id="cart-total" class="font-semibold text-lg tracking-tight">Rp0</span>
+        </div>
+        <button onclick="window.location.href='/checkout.html'" class="w-full py-3 bg-zinc-900 text-white font-medium rounded-lg hover:bg-zinc-800 transition-colors duration-200 text-sm">Checkout</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vault Section -->
+  <section class="max-w-7xl mx-auto px-6 pt-12 pb-16">
+    <!-- Header with elegant divider -->
+    <div class="text-center mb-10">
+      <h2 class="text-3xl md:text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 mb-2">The Vault</h2>
+      <p class="text-zinc-400 dark:text-zinc-500 text-sm">Every card, one place</p>
+    </div>
+
+    <!-- Controls: sort, search, sold toggle, count -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5">
+      <div class="flex items-center gap-3">
+        <!-- Sort Dropdown -->
+        <div class="relative">
+          <button id="sort-btn" class="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg bg-white dark:bg-zinc-800 hover:border-gray-300 transition text-xs font-semibold text-gray-600">
+            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m0-6V4"/></svg>
+            <span id="sort-label">Price: Low to High</span>
+            <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div id="sort-menu" class="hidden absolute left-0 mt-2 w-48 bg-white dark:bg-zinc-800 border border-gray-200 rounded-lg shadow-lg py-1 z-50">
+            <button data-sort="price-asc" class="sort-option sort-active w-full text-left px-4 py-2 text-xs">Price: Low to High</button>
+            <button data-sort="price-desc" class="sort-option w-full text-left px-4 py-2 text-xs text-gray-600">Price: High to Low</button>
+            <button data-sort="fmv-asc" class="sort-option w-full text-left px-4 py-2 text-xs text-gray-600">FMV: Low to High</button>
+            <button data-sort="fmv-desc" class="sort-option w-full text-left px-4 py-2 text-xs text-gray-600">FMV: High to Low</button>
+            <button data-sort="newest" class="sort-option w-full text-left px-4 py-2 text-xs text-gray-600">Newest Cards</button>
+            <button data-sort="listed" class="sort-option w-full text-left px-4 py-2 text-xs text-gray-600">Recently Listed</button>
+            <button data-sort="name-az" class="sort-option w-full text-left px-4 py-2 text-xs text-gray-600">Name (A-Z)</button>
+            <button data-sort="name-za" class="sort-option w-full text-left px-4 py-2 text-xs text-gray-600">Name (Z-A)</button>
+          </div>
+        </div>
+
+        <!-- Sold toggle -->
+        <button id="sold-toggle" class="flex items-center gap-1.5 px-3 py-2 border border-gray-200 rounded-lg bg-white dark:bg-zinc-800 hover:border-gray-300 transition text-xs font-semibold text-gray-500">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h18v18H3z"/><line x1="3" y1="3" x2="21" y2="21" stroke-width="1.5"/></svg>
+          <span>Show Sold</span>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Card count -->
+        <span id="card-count" class="text-[11px] text-gray-400 font-medium whitespace-nowrap">0 cards</span>
+        <!-- Search -->
+        <div class="relative">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input type="text" id="search-input" placeholder="Search grails..."
+                 class="w-48 md:w-56 pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:border-poke-red focus:outline-none text-xs bg-white dark:bg-zinc-800 transition-colors">
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div id="filters" class="flex gap-2 overflow-x-auto pb-4 mb-4">
+      <button data-category="" class="filter-btn filter-active">All</button>
+    </div>
+
+    <!-- Cards Grid - dense layout -->
+    <div id="cards-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+      <!-- Cards loaded dynamically -->
+    </div>
+
+    <div id="loading" class="text-center py-16 text-gray-400">
+      <p class="text-sm">Loading vault...</p>
+    </div>
+
+    <div id="empty-vault" class="hidden text-center py-16 text-zinc-400 dark:text-zinc-500">
+      <p class="text-base mb-2">No cards found</p>
+      <p class="text-xs">Check back later for new arrivals</p>
+    </div>
+  </section>
+
+  <!-- Item Preview Modal -->
+  <div id="preview-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none opacity-0 transition-opacity duration-200">
+    <div class="absolute inset-0 bg-black/40" onclick="closePreview()"></div>
+    <div id="preview-content" class="relative bg-white dark:bg-zinc-800 rounded-xl max-w-4xl w-full overflow-hidden scale-[0.96] opacity-0 transition-all duration-250" style="transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1)">
+      <button id="close-preview" class="absolute top-4 right-4 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:text-zinc-400 dark:text-zinc-500 text-2xl z-10 transition-colors">&times;</button>
+      <div class="grid md:grid-cols-2">
+        <div class="bg-zinc-50 dark:bg-zinc-900/50 flex items-center justify-center overflow-hidden p-8" style="aspect-ratio: 3/4;">
+          <img id="preview-image" src="" alt="" class="w-full h-full object-contain hidden rounded-lg">
+          <div id="preview-placeholder" class="flex items-center justify-center">
+            <svg class="w-24 h-24 text-zinc-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="18" height="18" rx="2" stroke-width="1.5"/>
+              <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+              <path d="M21 15l-5-5L5 21" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="p-8 flex flex-col justify-between">
+          <div>
+            <div id="preview-grading-wrap" class="hidden mb-3">
+              <span id="preview-grading" class="inline-block px-3 py-1 bg-zinc-100 text-zinc-700 text-xs font-semibold rounded-md uppercase tracking-wider"></span>
+            </div>
+            <h2 id="preview-name" class="text-2xl font-semibold mb-2 text-zinc-900 dark:text-zinc-100 tracking-tight"></h2>
+            <p id="preview-category" class="text-sm text-zinc-400 dark:text-zinc-500 mb-4"></p>
+            <p id="preview-price" class="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-6 tracking-tight"></p>
+            <div class="border-t border-zinc-100 dark:border-zinc-700/50 pt-4">
+              <p id="preview-desc" class="text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 leading-relaxed"></p>
+            </div>
+          </div>
+          <button id="preview-add-cart" class="w-full py-3 bg-zinc-900 text-white font-medium rounded-lg hover:bg-zinc-800 transition-colors duration-200 text-sm mt-6">
+            Add to Cart
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="mt-12 border-t border-zinc-200 dark:border-zinc-700">
+    <div class="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
+      <p class="text-xs text-zinc-400 dark:text-zinc-500">&copy; 2026 Campt's Collection</p>
+      <a href="/" class="text-xs text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:text-zinc-100 transition-colors">← Back to Store</a>
+    </div>
+  </footer>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let allCards = [];
+    let supabaseClient = null;
+
+    // Fetch config and initialize Supabase
+    async function initSupabase() {
+      try {
+        const res = await fetch(`${API_BASE}/api/config`);
+        const config = await res.json();
+        if (config.supabaseUrl && config.supabaseAnonKey) {
+          supabaseClient = supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+          
+          // Subscribe to real-time card updates in the vault
+          supabaseClient
+            .channel('vault-cards')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'cards' }, payload => {
+              loadCards();
+            })
+            .subscribe();
+        }
+      } catch (err) {
+        console.error('Failed to initialize Supabase client:', err);
+      }
+    }
+    initSupabase();
+    let currentCategory = '';
+    let currentSort = 'price-asc';
+    let showSold = false;
+
+    // ===== CART =====
+    let cart = JSON.parse(localStorage.getItem('campt_cart') || '[]');
+    function updateCart() {
+      const el = document.getElementById('cart-count');
+      if (el) el.textContent = cart.length;
+      localStorage.setItem('campt_cart', JSON.stringify(cart));
+    }
+    updateCart();
+
+    document.getElementById('cart-btn').addEventListener('click', () => {
+      const modal = document.getElementById('cart-modal');
+      const panel = document.getElementById('cart-panel');
+      const itemsDiv = document.getElementById('cart-items');
+      const totalSpan = document.getElementById('cart-total');
+      if (cart.length === 0) {
+        itemsDiv.innerHTML = '<p class="text-zinc-400 dark:text-zinc-500 text-center py-12 text-sm">Cart is empty</p>';
+        totalSpan.textContent = 'Rp0';
+      } else {
+        let total = 0;
+        itemsDiv.innerHTML = cart.map((item, i) => {
+          const price = parseInt(item.price.replace(/[^0-9]/g, '')) || 0;
+          total += price;
+          return `<div class="flex items-center justify-between py-4 ${i < cart.length - 1 ? 'border-b border-zinc-100 dark:border-zinc-700/50' : ''}">
+            <div><p class="font-medium text-sm">${esc(item.name)}</p><p class="text-xs text-zinc-400 dark:text-zinc-500">${esc(item.category)}</p></div>
+            <div class="flex items-center gap-3"><span class="font-semibold text-sm">${esc(item.price)}</span><button onclick="removeFromCart(${i})" class="text-zinc-400 dark:text-zinc-500 hover:text-red-500 text-sm transition-colors">&times;</button></div>
+          </div>`;
+        }).join('');
+        totalSpan.textContent = `Rp${total.toLocaleString()}`;
+      }
+      modal.classList.remove('hidden');
+      setTimeout(() => panel.classList.remove('translate-x-full'), 10);
+    });
+    document.getElementById('close-cart').addEventListener('click', () => {
+      const modal = document.getElementById('cart-modal');
+      const panel = document.getElementById('cart-panel');
+      panel.classList.add('translate-x-full');
+      setTimeout(() => modal.classList.add('hidden'), 300);
+    });
+    document.getElementById('cart-modal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('cart-modal')) {
+        const modal = document.getElementById('cart-modal');
+        const panel = document.getElementById('cart-panel');
+        panel.classList.add('translate-x-full');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+      }
+    });
+    function removeFromCart(index) {
+      cart.splice(index, 1); updateCart();
+      document.getElementById('cart-btn').click();
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast-enter flex items-center gap-3 bg-white dark:bg-zinc-800 px-5 py-4 rounded-lg border border-zinc-200 dark:border-zinc-700 min-w-[300px] max-w-[400px]`;
+      toast.innerHTML = `<span class="text-sm font-medium text-zinc-800 dark:text-zinc-200">${esc(message)}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => { toast.classList.remove('toast-enter'); toast.classList.add('toast-exit'); setTimeout(() => toast.remove(), 300); }, 2500);
+    }
+
+    // Confirm dialog — custom modal, no native confirm()
+    function showConfirm(message) {
+      return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'fixed inset-0 bg-black/30 z-[200] flex items-center justify-center p-4';
+        overlay.innerHTML = `<div class="bg-white dark:bg-zinc-800 rounded-xl max-w-sm w-full p-6 border border-zinc-200 dark:border-zinc-700 shadow-xl">
+          <p class="text-sm text-zinc-700 mb-6">${esc(message)}</p>
+          <div class="flex justify-end gap-2">
+            <button id="confirm-cancel" class="px-4 py-2 text-sm font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:text-zinc-100 transition-colors rounded-lg hover:bg-zinc-50 dark:bg-zinc-900/50">Cancel</button>
+            <button id="confirm-ok" class="px-4 py-2 text-sm font-medium bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors">Confirm</button>
+          </div>
+        </div>`;
+        document.body.appendChild(overlay);
+        const cleanup = () => overlay.remove();
+        overlay.querySelector('#confirm-cancel').addEventListener('click', () => { cleanup(); resolve(false); });
+        overlay.querySelector('#confirm-ok').addEventListener('click', () => { cleanup(); resolve(true); });
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) { cleanup(); resolve(false); } });
+      });
+    }
+
+    // Check auth
+    function checkAdminAuth() {
+      const token = localStorage.getItem('campt_token');
+      if (token) {
+        const loginEl = document.getElementById('nav-login');
+        if (loginEl) loginEl.classList.add('hidden');
+        const avatarEl = document.getElementById('nav-avatar');
+        if (avatarEl) avatarEl.classList.remove('hidden');
+      }
+    }
+    checkAdminAuth();
+
+    // Logout
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) logoutBtn.addEventListener('click', () => { localStorage.removeItem('campt_token'); window.location.reload(); });
+
+    function parsePrice(str) {
+      if (!str) return 0;
+      return parseInt(String(str).replace(/[^0-9]/g, ''), 10) || 0;
+    }
+
+    function sortCards(cards) {
+      return [...cards].sort((a, b) => {
+        switch (currentSort) {
+          case 'price-asc': return parsePrice(a.price) - parsePrice(b.price);
+          case 'price-desc': return parsePrice(b.price) - parsePrice(a.price);
+          case 'fmv-asc': return (parsePrice(a.fmv || a.price) - parsePrice(b.fmv || b.price));
+          case 'fmv-desc': return (parsePrice(b.fmv || b.price) - parsePrice(a.fmv || a.price));
+          case 'newest': return b.id - a.id;
+          case 'listed': return b.id - a.id;
+          case 'name-az': return a.name.localeCompare(b.name);
+          case 'name-za': return b.name.localeCompare(a.name);
+          default: return 0;
+        }
+      });
+    }
+
+    function esc(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = String(str);
+      return div.innerHTML;
+    }
+
+    function getCardPlaceholder() {
+      return `<svg class="w-10 h-10 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <rect x="4" y="4" width="16" height="16" rx="2" stroke-width="1.5"/>
+        <circle cx="8" cy="8" r="1" fill="currentColor"/>
+        <path d="M20 20L14 14" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>`;
+    }
+
+    async function loadCategories() {
+      try {
+        const res = await fetch(`${API_BASE}/api/categories`);
+        const categories = await res.json();
+        const filtersDiv = document.getElementById('filters');
+        categories.forEach(cat => {
+          const btn = document.createElement('button');
+          btn.dataset.category = cat.name;
+          btn.className = 'filter-btn';
+          btn.textContent = cat.name;
+          filtersDiv.appendChild(btn);
+        });
+      } catch (err) { console.error('Categories error:', err); }
+    }
+
+    async function loadCards() {
+      try {
+        const res = await fetch(`${API_BASE}/api/cards`);
+        allCards = await res.json();
+        renderCards(allCards);
+      } catch (err) {
+        console.error('Cards error:', err);
+        document.getElementById('loading').textContent = 'Failed to load cards.';
+      }
+    }
+
+    function renderCards(cards) {
+      const grid = document.getElementById('cards-grid');
+      const loading = document.getElementById('loading');
+      const empty = document.getElementById('empty-vault');
+      const countEl = document.getElementById('card-count');
+
+      loading.classList.add('hidden');
+
+      let filtered = cards;
+      if (!showSold) filtered = cards.filter(c => c.status === 'active');
+      if (currentCategory) filtered = filtered.filter(c => c.category === currentCategory);
+
+      const searchTerm = document.getElementById('search-input').value.toLowerCase();
+      if (searchTerm) {
+        filtered = filtered.filter(c =>
+          c.name.toLowerCase().includes(searchTerm) ||
+          c.category.toLowerCase().includes(searchTerm) ||
+          (c.set_name && c.set_name.toLowerCase().includes(searchTerm))
+        );
+      }
+
+      const sorted = sortCards(filtered);
+      countEl.textContent = `${sorted.length} card${sorted.length !== 1 ? 's' : ''}`;
+
+      if (sorted.length === 0) {
+        grid.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+      }
+
+      empty.classList.add('hidden');
+
+      grid.innerHTML = sorted.map((card, i) => `
+        <div class="card-slab card-enter" style="animation-delay: ${i * 20}ms">
+          <div class="card-slab-image aspect-[3/4]">
+            ${card.image_url
+              ? `<img src="${esc(card.image_url)}" alt="${esc(card.name)}" class="w-full h-full object-cover">`
+              : `<div class="w-full h-full flex items-center justify-center">${getCardPlaceholder()}</div>`
+            }
+            ${card.grading ? `<div class="grading-badge">${esc(card.grading)}</div>` : ''}
+            ${card.status === 'sold' ? `<div class="sold-overlay"><span>Sold</span></div>` : ''}
+          </div>
+          <div class="card-slab-info">
+            <p class="text-[10px] font-semibold text-poke-red mb-0.5 truncate">${esc(card.category)}</p>
+            <h3 class="text-[11px] font-bold text-gray-800 leading-tight truncate">${esc(card.name)}</h3>
+            <p class="text-[12px] font-extrabold text-gray-900 mt-1">${esc(card.price)}</p>
+          </div>
+          ${card.status !== 'sold' ? `<button data-card-id="${card.id}" class="view-details-btn absolute inset-0 bg-transparent hover:bg-black/[0.02] transition cursor-pointer" aria-label="View ${esc(card.name)}"></button>` : ''}
+        </div>
+      `).join('');
+    
+      setTimeout(() => {
+        if(typeof VanillaTilt !== 'undefined') {
+          VanillaTilt.init(document.querySelectorAll(".card-hover"), {
+            max: 15,
+            speed: 400,
+            glare: true,
+            "max-glare": 0.35,
+            scale: 1.02
+          });
+        }
+      }, 50);
+    }
+
+
+    // Filter buttons
+    document.getElementById('filters').addEventListener('click', (e) => {
+      const btn = e.target.closest('.filter-btn');
+      if (!btn) return;
+      currentCategory = btn.dataset.category;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('filter-active'));
+      btn.classList.add('filter-active');
+      renderCards(allCards);
+    });
+
+    // View Details — open preview modal (same as index.html)
+    let currentPreviewItem = null;
+
+    function openPreview(card) {
+      currentPreviewItem = card;
+      document.getElementById('preview-name').textContent = card.name;
+      document.getElementById('preview-category').textContent = card.category;
+      document.getElementById('preview-price').textContent = card.price;
+      document.getElementById('preview-desc').textContent = card.description || 'Premium Pokémon TCG card from Japan. Authentic and in excellent condition.';
+      const gradingWrap = document.getElementById('preview-grading-wrap');
+      const gradingEl = document.getElementById('preview-grading');
+      if (card.grading) {
+        gradingEl.textContent = card.grading;
+        gradingWrap.classList.remove('hidden');
+      } else {
+        gradingWrap.classList.add('hidden');
+      }
+      if (card.image_url) {
+        document.getElementById('preview-image').src = card.image_url;
+        document.getElementById('preview-image').classList.remove('hidden');
+        document.getElementById('preview-placeholder').classList.add('hidden');
+      } else {
+        document.getElementById('preview-image').classList.add('hidden');
+        document.getElementById('preview-placeholder').classList.remove('hidden');
+      }
+      const modal = document.getElementById('preview-modal');
+      const content = document.getElementById('preview-content');
+      modal.classList.remove('pointer-events-none', 'opacity-0');
+      modal.classList.add('pointer-events-auto', 'opacity-100');
+      content.classList.remove('scale-[0.96]', 'opacity-0');
+      content.classList.add('scale-100', 'opacity-100');
+    }
+
+    function closePreview() {
+      const modal = document.getElementById('preview-modal');
+      const content = document.getElementById('preview-content');
+      content.classList.add('scale-[0.96]', 'opacity-0');
+      content.classList.remove('scale-100', 'opacity-100');
+      modal.classList.add('opacity-0');
+      modal.classList.remove('opacity-100');
+      setTimeout(() => { modal.classList.add('pointer-events-none'); modal.classList.remove('pointer-events-auto'); }, 200);
+    }
+
+    document.getElementById('close-preview').addEventListener('click', closePreview);
+
+    document.getElementById('preview-add-cart').addEventListener('click', () => {
+      if (currentPreviewItem) {
+        cart.push(currentPreviewItem);
+        updateCart();
+        showToast(`"${currentPreviewItem.name}" added to cart!`, 'success');
+        closePreview();
+      }
+    });
+
+    document.getElementById('cards-grid').addEventListener('click', (e) => {
+      const btn = e.target.closest('.view-details-btn');
+      if (!btn) return;
+      const cardId = parseInt(btn.dataset.cardId);
+      const card = allCards.find(c => c.id === cardId);
+      if (card) openPreview(card);
+    });
+
+    // Search
+    document.getElementById('search-input').addEventListener('input', () => renderCards(allCards));
+
+    // Sort Dropdown Toggle
+    const sortBtn = document.getElementById('sort-btn');
+    const sortMenu = document.getElementById('sort-menu');
+    const sortLabel = document.getElementById('sort-label');
+
+    sortBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sortMenu.classList.toggle('hidden');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', () => sortMenu.classList.add('hidden'));
+    sortMenu.addEventListener('click', (e) => e.stopPropagation());
+
+    // Sort Option Selection
+    document.querySelectorAll('.sort-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentSort = btn.dataset.sort;
+        
+        document.querySelectorAll('.sort-option').forEach(b => b.classList.remove('sort-active'));
+        btn.classList.add('sort-active');
+        
+        sortLabel.textContent = btn.textContent;
+        sortMenu.classList.add('hidden');
+        
+        renderCards(allCards);
+      });
+    });
+
+    // Sold toggle
+    const soldToggle = document.getElementById('sold-toggle');
+    soldToggle.addEventListener('click', () => {
+      showSold = !showSold;
+      const span = soldToggle.querySelector('span');
+      if (showSold) {
+        span.textContent = 'Hide Sold';
+        soldToggle.classList.add('text-poke-red', 'border-poke-red/20');
+        soldToggle.classList.remove('text-gray-500');
+      } else {
+        span.textContent = 'Show Sold';
+        soldToggle.classList.remove('text-poke-red', 'border-poke-red/20');
+        soldToggle.classList.add('text-gray-500');
+      }
+      renderCards(allCards);
+    });
+
+    // Init
+    loadCategories();
+    loadCards();
+  </script>
+  </div>
+
+  <!-- Floating WhatsApp Button -->
+  <a href="https://api.whatsapp.com/send/?phone=6285815801715&text&type=phone_number&app_absent=0" target="_blank"
+     class="fixed bottom-6 right-6 bg-[#25D366] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform z-[100] group">
+    <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.878-.788-1.471-1.761-1.643-2.06-.173-.298-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+    <!-- Always visible text bubble next to WA button -->
+    <span class="absolute right-16 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm px-4 py-2 rounded-xl shadow-md border border-zinc-100 dark:border-zinc-700/50 font-medium whitespace-nowrap opacity-100">
+      Need Help?
+    </span>
+  </a>
+
+  <!-- Gengar Dark Mode Switch -->
+  <button id="theme-toggle" class="fixed bottom-6 left-6 w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform z-[100] bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:outline-none">
+    <img id="theme-toggle-light-icon" src="/images/gengar_sleeping.png" class="w-10 h-10 hidden" alt="Light Mode">
+    <img id="theme-toggle-dark-icon" src="/images/gengar_awake.png" class="w-10 h-10 hidden" alt="Dark Mode">
+  </button>
+  
+  <script>
+    const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+    const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+
+    if (document.documentElement.classList.contains('dark')) {
+        themeToggleDarkIcon.classList.remove('hidden');
+    } else {
+        themeToggleLightIcon.classList.remove('hidden');
+    }
+
+    const themeToggleBtn = document.getElementById('theme-toggle');
+
+    themeToggleBtn.addEventListener('click', function() {
+        themeToggleDarkIcon.classList.toggle('hidden');
+        themeToggleLightIcon.classList.toggle('hidden');
+
+        if (document.documentElement.classList.contains('dark')) {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('color-theme', 'light');
+        } else {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('color-theme', 'dark');
+        }
+    });
+  
+    // Floating Cart Logic
+    window.addEventListener('scroll', () => {
+      const mainCartBtn = document.getElementById('cart-btn');
+      const floatingBtn = document.getElementById('floating-cart-btn');
+      if (mainCartBtn && floatingBtn) {
+        const rect = mainCartBtn.getBoundingClientRect();
+        // Show floating if main cart is out of viewport (rect.bottom < 0)
+        if (rect.bottom < 0) {
+          floatingBtn.classList.remove('scale-0');
+          floatingBtn.classList.add('scale-100');
+        } else {
+          floatingBtn.classList.add('scale-0');
+          floatingBtn.classList.remove('scale-100');
+        }
+      }
+    });
+
+    const fbtn = document.getElementById('floating-cart-btn');
+    if (fbtn) {
+      fbtn.addEventListener('click', () => {
+        document.getElementById('cart-btn').click();
+      });
+    }
+
+</script>
+</body>
+
+</html>

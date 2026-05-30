@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terms & Conditions - Campt's Collection</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] } } }
+    }
+  </script>
+
+  <script>
+    if (localStorage.getItem('color-theme') === 'dark') {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
+</head>
+<body class="font-sans bg-zinc-50 dark:bg-zinc-900/50 text-zinc-900 dark:text-zinc-100 antialiased max-w-3xl mx-auto p-10 dark:bg-zinc-900 dark:text-zinc-100 transition-colors duration-500">
+  <a href="/" class="text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:text-zinc-100 mb-8 inline-block">&larr; Back to Store</a>
+  <h1 class="text-3xl font-bold mb-6">Terms & Conditions</h1>
+  
+  <div class="space-y-6 text-sm text-zinc-600 dark:text-zinc-400 dark:text-zinc-500 leading-relaxed bg-white dark:bg-zinc-800 p-8 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-700">
+    <section>
+      <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">1. Authenticity Guarantee</h2>
+      <p>Semua kartu Pokémon TCG yang kami jual dijamin 100% otentik (asli) dan diimpor langsung dari Jepang. Kami selalu menyertakan foto asli produk.</p>
+    </section>
+    
+    <section>
+      <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">2. Kondisi Produk</h2>
+      <p>Kondisi kartu telah dijelaskan seakurat mungkin pada halaman detail produk (seperti Mint, Near Mint, dll). Pembeli diharapkan meninjau foto dan detail dengan saksama sebelum membeli.</p>
+    </section>
+
+    <section>
+      <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">3. Kebijakan Refund</h2>
+      <p>Kami hanya melayani <i>refund</i> atau pengembalian jika produk yang tiba tidak sesuai dengan deskripsi (misalnya kartu berbeda dari foto). Harap sertakan video unboxing penuh tanpa jeda sebagai bukti pendukung klaim.</p>
+    </section>
+    
+    <section>
+      <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">4. Pembayaran</h2>
+      <p>Pembayaran diproses melalui Bank Transfer (BCA) atau QRIS. Setelah checkout, mohon konfirmasi melalui WhatsApp agar pesanan dapat segera diproses.</p>
+    </section>
+  </div>
+  
+  <p class="mt-8 text-center text-xs text-zinc-400 dark:text-zinc-500">© 2026 Campt's Collection</p>
+
+  <!-- Gengar Dark Mode Switch -->
+  <button id="theme-toggle" class="fixed bottom-6 left-6 w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform z-[100] bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:outline-none">
+    <img id="theme-toggle-light-icon" src="/images/gengar_sleeping.png" class="w-10 h-10 hidden" alt="Light Mode">
+    <img id="theme-toggle-dark-icon" src="/images/gengar_awake.png" class="w-10 h-10 hidden" alt="Dark Mode">
+  </button>
+  
+  <script>
+    const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+    const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+
+    if (document.documentElement.classList.contains('dark')) {
+        themeToggleDarkIcon.classList.remove('hidden');
+    } else {
+        themeToggleLightIcon.classList.remove('hidden');
+    }
+
+    const themeToggleBtn = document.getElementById('theme-toggle');
+
+    themeToggleBtn.addEventListener('click', function() {
+        themeToggleDarkIcon.classList.toggle('hidden');
+        themeToggleLightIcon.classList.toggle('hidden');
+
+        if (document.documentElement.classList.contains('dark')) {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('color-theme', 'light');
+        } else {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('color-theme', 'dark');
+        }
+    });
+  </script>
+</body>
+</html>

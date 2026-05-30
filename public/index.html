@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campt's Collection - Premium Vault</title>
+  <!-- Open Graph / Link Preview Tags -->
+  <meta property="og:title" content="Campt's Collection - Premium Pokémon Vault">
+  <meta property="og:description" content="Koleksi eksklusif kartu Pokémon rare, tersimpan aman dalam Midnight Vault.">
+  <meta property="og:image" content="https://camptscollection.vercel.app/og-preview.png">
+  <meta property="og:url" content="https://camptscollection.vercel.app/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Campt's Collection - Premium Pokémon Vault">
+  <meta name="twitter:description" content="Koleksi eksklusif kartu Pokémon rare, tersimpan aman dalam Midnight Vault.">
+  <meta name="twitter:image" content="https://camptscollection.vercel.app/og-preview.png">
+
+  <link rel="icon" type="image/svg+xml" href="/pokeball.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+          colors: {
+            poke: { red: '#CC0000', darkred: '#9E0000', black: '#1a1a1a', gray: '#f5f5f5', line: '#e0e0e0' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+    .status-dot.pending { background: #ca8a04; }
+    .status-dot.processing { background: #2563eb; }
+    .status-dot.completed { background: #16a34a; }
+    .status-dot.cancelled { background: #dc2626; }
+    .status-dot.active { background: #16a34a; }
+    .status-dot.sold { background: #dc2626; }
+    .status-dot.inactive { background: #a1a1aa; }
+    .pokeball-icon {
+      width: 18px; height: 18px; display: inline-block;
+      border-radius: 50%;
+      background: linear-gradient(to bottom, #CC0000 50%, #fff 50%);
+      border: 2px solid #1a1a1a;
+      position: relative; vertical-align: middle;
+    }
+    .pokeball-icon::before {
+      content: ''; position: absolute; top: 50%; left: 0; right: 0;
+      height: 2px; background: #1a1a1a; transform: translateY(-50%);
+    }
+    .pokeball-icon::after {
+      content: ''; position: absolute; top: 50%; left: 50%;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #fff; border: 2px solid #1a1a1a;
+      transform: translate(-50%, -50%);
+    }
+    .pokeball-lg {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: linear-gradient(to bottom, #CC0000 50%, #fff 50%);
+      border: 3px solid #1a1a1a; position: relative;
+    }
+    .pokeball-lg::before {
+      content: ''; position: absolute; top: 50%; left: 0; right: 0;
+      height: 3px; background: #1a1a1a; transform: translateY(-50%);
+    }
+    .pokeball-lg::after {
+      content: ''; position: absolute; top: 50%; left: 50%;
+      width: 12px; height: 12px; border-radius: 50%;
+      background: #fff; border: 3px solid #1a1a1a;
+      transform: translate(-50%, -50%);
+    }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    /* Impeccable-style easing */
+    :root { --ease-impeccable: cubic-bezier(0.16, 1, 0.3, 1); }
+    .card-hover {
+      transition: transform 0.5s var(--ease-impeccable),
+                  border-color 0.5s var(--ease-impeccable);
+    }
+    .card-hover:hover { transform: translateY(-2px); border-color: #d0d0d0; }
+    .card-enter { animation: cardFadeIn 0.4s var(--ease-impeccable) both; }
+    @keyframes cardFadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    html { scroll-behavior: smooth; }
+
+    /* Toast animation with impeccable easing */
+    .toast-enter { animation: slideInRight 0.3s var(--ease-impeccable); }
+    .toast-exit { animation: slideOutRight 0.3s var(--ease-impeccable); }
+    @keyframes slideInRight { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes slideOutRight { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(100%); } }
+  </style>
+  <link rel="stylesheet" href="/global.css">
+
+  <script>
+    if (localStorage.getItem('color-theme') === 'dark') {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
+</head>
+<body class="font-sans bg-white dark:bg-zinc-800 text-poke-black antialiased dark:bg-zinc-900 dark:text-zinc-100 transition-colors duration-500">
+  <div class="overflow-x-hidden">
+
+  
+
+
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-20 right-6 z-[100] flex flex-col gap-3"></div>
+
+  <!-- Navbar: Clean, no decorative pokeball, subtle border -->
+  <nav class="border-b border-zinc-200 dark:border-zinc-700 sticky top-0 bg-white dark:bg-zinc-800/90 backdrop-blur-sm z-50">
+    <div class="max-w-7xl mx-auto px-6 py-3 md:h-14 flex flex-wrap md:grid md:grid-cols-3 items-center justify-between gap-y-3">
+      <div class="flex items-center gap-4">
+        <a href="/" class="flex items-center gap-2.5">
+          <img src="/logo.jpg" alt="Campt's Collection" class="h-7 w-auto dark:bg-white dark:p-1 dark:rounded-lg">
+        </a>
+      </div>
+      <div class="flex items-center justify-center gap-4 md:gap-6 text-sm font-medium text-zinc-400 dark:text-zinc-500 w-full md:w-auto order-3 md:order-none">
+        <a href="/vault.html" class="hover:text-zinc-900 dark:text-zinc-100 transition-colors">The Vault</a>
+        <a href="/orders.html" class="hover:text-zinc-900 dark:text-zinc-100 transition-colors">Orders</a>
+        <a href="/#faq" class="hover:text-zinc-900 dark:text-zinc-100 transition-colors">FAQ</a>
+        <a href="/admin.html" id="nav-dashboard" class="hover:text-zinc-900 dark:text-zinc-100 transition-colors hidden">Dashboard</a>
+      </div>
+      <div class="flex items-center justify-end gap-3">
+        <button id="cart-btn" class="relative flex items-center gap-1.5 text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:text-zinc-100 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/>
+          </svg>
+          <span>Cart (<span id="cart-count">0</span>)</span>
+        </button>
+        <a href="/login.html" id="nav-login" class="px-3.5 py-1.5 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-800 transition-colors">Login</a>
+        <div id="nav-avatar" class="hidden flex items-center gap-3">
+          <a href="/admin.html" class="text-xs text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:text-zinc-100 transition-colors">Dashboard</a>
+          <div class="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-sm font-semibold cursor-pointer hover:bg-zinc-200 transition-colors" onclick="window.location.href='/admin.html'" title="Admin">A</div>
+          <button id="logout-btn" class="text-xs text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:text-zinc-100 transition-colors">Logout</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  
+  <!-- Floating Cart Button -->
+  <button id="floating-cart-btn" class="fixed top-20 right-6 w-12 h-12 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-full shadow-2xl flex items-center justify-center z-40 transition-all duration-300 transform scale-0 origin-center hover:scale-110">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+    <span id="floating-cart-count" class="absolute -top-1 -right-1 bg-poke-red text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-800 transition-all">0</span>
+  </button>
+
+  <!-- Cart Slide Panel -->
+  <div id="cart-modal" class="hidden fixed inset-0 bg-black/40 z-50">
+    <div id="cart-panel" class="absolute right-0 top-0 h-full w-full max-w-md bg-white dark:bg-zinc-800 transform translate-x-full transition-transform duration-300" style="transition-timing-function: var(--ease-impeccable)">
+      <div class="flex items-center justify-between px-6 py-5 border-b border-zinc-200 dark:border-zinc-700">
+        <h3 class="font-semibold text-lg tracking-tight">Cart</h3>
+        <button id="close-cart" class="text-zinc-400 dark:text-zinc-500 hover:text-poke-black text-xl transition-colors duration-200">&times;</button>
+      </div>
+      <div id="cart-items" class="px-6 overflow-y-auto" style="height: calc(100vh - 200px);">
+        <p class="text-zinc-400 dark:text-zinc-500 text-center py-12 text-sm">Cart is empty</p>
+      </div>
+      <div class="border-t border-zinc-200 dark:border-zinc-700 px-6 py-5">
+        <div class="flex justify-between mb-5">
+          <span class="font-medium text-sm text-zinc-600 dark:text-zinc-400 dark:text-zinc-500">Total</span>
+          <span id="cart-total" class="font-semibold text-lg tracking-tight">Rp0</span>
+        </div>
+        <button onclick="window.location.href='/checkout.html'" class="w-full py-3 bg-poke-black text-white font-medium rounded-lg hover:bg-zinc-800 transition-colors duration-200 text-sm">
+          Checkout
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Item Preview Modal -->
+  <div id="preview-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none opacity-0 transition-opacity duration-200">
+    <div class="absolute inset-0 bg-black/40" onclick="closePreview()"></div>
+    <div id="preview-content" class="relative bg-white dark:bg-zinc-800 rounded-xl max-w-4xl w-full overflow-hidden scale-[0.96] opacity-0 transition-all duration-250" style="transition-timing-function: var(--ease-impeccable)">
+      <button id="close-preview" class="absolute top-4 right-4 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:text-zinc-400 dark:text-zinc-500 text-2xl z-10 transition-colors duration-200">&times;</button>
+      <div class="grid md:grid-cols-2">
+        <!-- Left: Card Image -->
+        <div class="bg-zinc-50 dark:bg-zinc-900/50 flex items-center justify-center overflow-hidden p-8" style="aspect-ratio: 3/4;">
+          <img id="preview-image" src="" alt="" class="w-full h-full object-contain hidden rounded-lg">
+          <div id="preview-placeholder" class="flex items-center justify-center">
+            <svg class="w-24 h-24 text-zinc-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="18" height="18" rx="2" stroke-width="1.5"/>
+              <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+              <path d="M21 15l-5-5L5 21" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+        <!-- Right: Description -->
+        <div class="p-8 flex flex-col justify-between">
+          <div>
+            <div id="preview-grading-wrap" class="hidden mb-3">
+              <span id="preview-grading" class="inline-block px-3 py-1 bg-zinc-100 text-zinc-700 text-xs font-semibold rounded-md uppercase tracking-wider"></span>
+            </div>
+            <h2 id="preview-name" class="text-2xl font-semibold mb-2 text-zinc-900 dark:text-zinc-100 tracking-tight"></h2>
+            <p id="preview-category" class="text-sm text-zinc-400 dark:text-zinc-500 mb-4"></p>
+            <p id="preview-price" class="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-6 tracking-tight"></p>
+            <div class="border-t border-zinc-100 dark:border-zinc-700/50 pt-4">
+              <p id="preview-desc" class="text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 leading-relaxed"></p>
+            </div>
+          </div>
+          <button id="preview-add-cart" class="w-full py-3 bg-[#111] text-white font-medium rounded-lg hover:bg-zinc-800 transition-colors duration-200 text-sm mt-6">
+            Add to Cart
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERO — UNTOUCHED -->
+  <section class="max-w-7xl mx-auto px-6 py-16 md:py-24 relative">
+    <img src="/images/pikachu_voxel.png" class="absolute top-0 -left-5 md:-left-10 w-24 md:w-40 opacity-40 mix-blend-multiply pointer-events-none animate-[float_8s_ease-in-out_infinite] z-10" style="filter: contrast(1.1) brightness(1.05);" alt="">
+    <img src="/images/snorlax_voxel.png" class="absolute top-[80%] -right-10 md:top-2/3 md:left-[40%] md:-right-auto w-24 md:w-48 opacity-40 mix-blend-multiply pointer-events-none animate-[float_12s_ease-in-out_infinite] z-10" style="filter: contrast(1.1) brightness(1.05);" alt="">
+    <div class="grid md:grid-cols-2 gap-12 items-center">
+      <div>
+        <div class="flex items-center gap-2 text-sm font-semibold text-poke-red uppercase tracking-wider mb-4">
+          <div class="pokeball-icon"></div>
+          Directly from Japan
+        </div>
+        <h1 class="text-4xl md:text-5xl font-bold leading-tight">
+          Secure Your Dream Grails.<br>Before They Vanish.
+        </h1>
+      </div>
+
+      <!-- 3D Pixel Pokéball -->
+      <div class="flex flex-col items-center justify-center w-full overflow-hidden md:-ml-8">
+        <canvas id="pokeball-canvas" width="500" height="500" class="max-w-full h-auto object-contain"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- GALLERY: No gradients, no orbs, no decorative lines — clean white -->
+  <section id="gallery" class="bg-white dark:bg-zinc-800 relative">
+    <img src="/images/charizard_voxel.png" class="absolute top-10 md:top-20 right-0 w-32 md:w-64 opacity-25 mix-blend-multiply pointer-events-none animate-[float_10s_ease-in-out_infinite] z-10" style="filter: contrast(1.1) brightness(1.05);" alt="">
+    <img src="/images/gengar_voxel.png" class="absolute bottom-40 -left-5 md:-left-10 w-28 md:w-48 opacity-25 mix-blend-multiply pointer-events-none animate-[float_9s_ease-in-out_infinite] z-10" style="filter: contrast(1.1) brightness(1.05);" alt="">
+    <div class="max-w-7xl mx-auto px-6 py-24">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl md:text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 mb-3">Gallery</h2>
+        <p class="text-zinc-400 dark:text-zinc-500 text-sm">Curated Pokémon TCG cards from Japan</p>
+      </div>
+
+      <!-- Cards Grid -->
+      <div id="cards-grid" class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Cards loaded dynamically from API -->
+      </div>
+
+      <div id="loading" class="text-center py-12 text-zinc-400 dark:text-zinc-500">
+        <p>Loading cards...</p>
+      </div>
+
+      <div id="empty-gallery" class="hidden text-center py-12 text-zinc-400 dark:text-zinc-500">
+        <p class="text-lg mb-2">No cards found</p>
+        <p class="text-sm">Check back later for new arrivals</p>
+      </div>
+
+      <!-- View More -->
+      <div class="flex justify-center mt-14">
+        <a href="/vault.html" class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-poke-black transition-colors duration-200 group border border-zinc-200 dark:border-zinc-700 rounded-lg hover:border-zinc-300">
+          View the full vault
+          <svg class="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIVE ORDER TRACKER: Minimal table -->
+  <section class="bg-white dark:bg-zinc-800 border-t border-zinc-100 dark:border-zinc-700/50">
+    <div class="max-w-7xl mx-auto px-6 py-20">
+      <div class="flex items-center justify-between mb-8">
+        <h2 class="relative text-2xl font-bold tracking-tight flex items-center gap-2">
+          <img src="/images/mew_pointing.png" alt="Mew" class="absolute -top-10 left-0 md:-left-28 w-16 md:w-24 opacity-90 mix-blend-multiply pointer-events-none animate-[float_6s_ease-in-out_infinite] z-20" style="filter: contrast(1.1) brightness(1.05);">
+          <span class="relative flex h-3 w-3">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+          </span>
+          Live Orders
+        </h2>
+        <a href="/orders.html" class="text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:underline">View All Orders &rarr;</a>
+      </div>
+      
+      <div class="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
+        <table class="w-full text-left border-collapse min-w-[600px]">
+          <thead class="bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-700">
+            <tr>
+              <th class="px-6 py-3 text-xs font-semibold text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 tracking-wider">CUSTOMER</th>
+              <th class="px-6 py-3 text-xs font-semibold text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 tracking-wider">ITEMS</th>
+              <th class="px-6 py-3 text-xs font-semibold text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 tracking-wider">TOTAL</th>
+              <th class="px-6 py-3 text-xs font-semibold text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 tracking-wider">STATUS</th>
+              <th class="px-6 py-3 text-xs font-semibold text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 tracking-wider">DATE</th>
+            </tr>
+          </thead>
+          <tbody id="active-orders-table" class="bg-white dark:bg-zinc-800 divide-y divide-zinc-100">
+            <tr><td colspan="5" class="text-center py-10 text-sm text-zinc-400 dark:text-zinc-500">Loading live tracker...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p id="no-active-orders" class="hidden text-center text-zinc-400 dark:text-zinc-500 text-sm py-4">No active orders at the moment.</p>
+    </div>
+  </section>
+
+  <!-- RECENT BUYERS: Clean, minimal -->
+  <section class="bg-zinc-50 dark:bg-zinc-900/50">
+    <div class="max-w-7xl mx-auto px-6 py-20">
+      <div class="relative inline-block w-full">
+        <h2 class="text-2xl font-bold tracking-tight mb-8 inline-block relative">
+          Recent Orders
+          <img src="/images/togepi_peeking.png" alt="Togepi" class="absolute -top-10 right-0 md:-right-24 w-14 md:w-20 opacity-90 mix-blend-multiply pointer-events-none animate-[bounce_4s_infinite] z-20" style="filter: contrast(1.1) brightness(1.05);">
+        </h2>
+      </div>
+      <div id="recent-buyers" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 p-5">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-zinc-400 dark:text-zinc-500">Order ID</span>
+            <span class="text-[10px] text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded-full">Completed</span>
+          </div>
+          <p class="font-medium text-sm">R***o</p>
+          <p class="text-xs text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 mt-1">Ho-Oh Legend (Bawah)</p>
+          <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-2">28 May 2026</p>
+        </div>
+      </div>
+      <p id="no-recent-buyers" class="hidden text-center text-zinc-400 dark:text-zinc-500 text-sm py-4">No completed orders yet. Be the first!</p>
+    </div>
+  </section>
+
+  <!-- FAQ: Clean accordion, no decorative separators -->
+  <section id="faq" class="bg-white dark:bg-zinc-800">
+    <div class="max-w-3xl mx-auto px-6 py-24">
+      <h2 class="text-2xl font-bold tracking-tight mb-10 text-center">FAQ</h2>
+      <div id="faq-list" class="divide-y divide-zinc-200 border-t border-zinc-200 dark:border-zinc-700 relative">
+        <!-- Interactive Squirtle -->
+        <img id="faq-squirtle" src="/images/squirtle_pointing.png" alt="Squirtle" class="absolute -left-5 md:-left-24 w-16 md:w-24 mix-blend-multiply transition-all duration-300 pointer-events-none z-20" style="top: 20px; opacity: 0; filter: contrast(1.1) brightness(1.05);">
+
+        <details class="group">
+          <summary class="px-0 py-5 cursor-pointer text-sm font-medium flex items-center justify-between select-none list-none [&::-webkit-details-marker]:hidden">
+            <span>Card-nya asli atau fake?</span>
+            <svg class="w-4 h-4 text-zinc-400 dark:text-zinc-500 transition-transform duration-200 group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <div class="pb-5 text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 leading-relaxed">Semua card langsung dibeli dari marketplace Japan (Mercari, SNKRDUNK, Yahoo Auctions). 100% authentic Pokemon TCG — bukan reprint, bukan fake.</div>
+        </details>
+        <details class="group">
+          <summary class="px-0 py-5 cursor-pointer text-sm font-medium flex items-center justify-between select-none list-none [&::-webkit-details-marker]:hidden">
+            <span>Gimana cara order?</span>
+            <svg class="w-4 h-4 text-zinc-400 dark:text-zinc-500 transition-transform duration-200 group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <div class="pb-5 text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 leading-relaxed">Browse koleksi → Add to cart → Checkout → Pilih metode bayar (<img src="/bca-logo.png" alt="BCA" class="h-3.5 w-auto inline-block align-middle -mt-0.5 mx-0.5"> / <img src="/qris-logo.png" alt="QRIS" class="h-3.5 w-auto inline-block align-middle -mt-0.5 mx-0.5">) → Konfirmasi via WhatsApp. Kami proses setelah pembayaran terverifikasi.</div>
+        </details>
+        <details class="group">
+          <summary class="px-0 py-5 cursor-pointer text-sm font-medium flex items-center justify-between select-none list-none [&::-webkit-details-marker]:hidden">
+            <span>Berapa lama pengiriman?</span>
+            <svg class="w-4 h-4 text-zinc-400 dark:text-zinc-500 transition-transform duration-200 group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <div class="pb-5 text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 leading-relaxed">Ready stock: 1-3 hari kerja. Pre-order (import dari Japan): 7-14 hari kerja. Tracking number akan dikirim via WhatsApp.</div>
+        </details>
+        <details class="group">
+          <summary class="px-0 py-5 cursor-pointer text-sm font-medium flex items-center justify-between select-none list-none [&::-webkit-details-marker]:hidden">
+            <span>Bisa nego harga?</span>
+            <svg class="w-4 h-4 text-zinc-400 dark:text-zinc-500 transition-transform duration-200 group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <div class="pb-5 text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 leading-relaxed">Bisa! Chat via WhatsApp button di pojok kanan bawah. Harga tergantung kondisi card dan kelangkaan.</div>
+        </details>
+        <details class="group">
+          <summary class="px-0 py-5 cursor-pointer text-sm font-medium flex items-center justify-between select-none list-none [&::-webkit-details-marker]:hidden">
+            <span>Metode pembayaran apa aja?</span>
+            <svg class="w-4 h-4 text-zinc-400 dark:text-zinc-500 transition-transform duration-200 group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <div class="pb-5 text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 leading-relaxed">Transfer <img src="/bca-logo.png" alt="BCA" class="h-3.5 w-auto inline-block align-middle -mt-0.5 mx-0.5"> atau <img src="/qris-logo.png" alt="QRIS" class="h-3.5 w-auto inline-block align-middle -mt-0.5 mx-0.5"> (scan dari e-wallet / bank). Rekening & QR code ditampilkan saat checkout. Konfirmasi via WhatsApp.</div>
+        </details>
+        <details class="group">
+          <summary class="px-0 py-5 cursor-pointer text-sm font-medium flex items-center justify-between select-none list-none [&::-webkit-details-marker]:hidden">
+            <span>Ada garansi?</span>
+            <svg class="w-4 h-4 text-zinc-400 dark:text-zinc-500 transition-transform duration-200 group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <div class="pb-5 text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 leading-relaxed">Ya — card dikirim sesuai deskripsi & foto. Kalau ada mismatch, bisa refund atau replacement. Chat kami via WhatsApp.</div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer: Clean, no gradient lines, no pokeball -->
+  <footer class="bg-zinc-50 dark:bg-zinc-900/50 border-t border-zinc-200 dark:border-zinc-700">
+    <div class="max-w-7xl mx-auto px-6 py-14">
+      <div class="grid md:grid-cols-3 gap-10">
+        <div>
+          <img src="/logo.jpg" alt="Campt's Collection" class="h-7 w-auto mb-3 dark:bg-white dark:p-1 dark:rounded-lg">
+          <p class="text-sm text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">Curated Pokémon TCG cards, sourced from Japan.</p>
+        </div>
+        <div>
+          <h4 class="font-semibold text-sm mb-3 text-zinc-900 dark:text-zinc-100">Marketplaces</h4>
+          <div class="flex flex-col items-start gap-2">
+            <a href="https://jp.mercari.com/" target="_blank" class="inline-flex items-center px-4 py-2 text-xs font-bold text-white bg-[#E32B36] rounded-lg shadow-sm hover:scale-105 transition-transform w-36">Mercari Japan</a>
+            <a href="https://snkrdunk.com/en/" target="_blank" class="inline-flex items-center px-4 py-2 text-xs font-bold text-white bg-black rounded-lg shadow-sm hover:scale-105 transition-transform w-36">SNKRDUNK</a>
+            <a href="https://auctions.yahoo.co.jp/" target="_blank" class="inline-flex items-center px-4 py-2 text-xs font-bold text-white bg-[#6002EE] rounded-lg shadow-sm hover:scale-105 transition-transform w-36">Yahoo Auctions</a>
+          </div>
+        </div>
+        <div>
+          <h4 class="font-semibold text-sm mb-3 text-zinc-900 dark:text-zinc-100">Support</h4>
+          <div class="flex flex-col items-start gap-2">
+            <a href="/#faq" class="inline-flex items-center px-4 py-2 text-xs font-medium text-zinc-700 bg-zinc-100 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-sm hover:bg-zinc-200 transition-colors w-40">FAQ</a>
+            <a href="https://api.whatsapp.com/send/?phone=6285815801715" target="_blank" class="inline-flex items-center px-4 py-2 text-xs font-medium text-zinc-700 bg-zinc-100 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-sm hover:bg-zinc-200 transition-colors w-40">Contact Support</a>
+            <a href="/tnc.html" class="inline-flex items-center px-4 py-2 text-xs font-medium text-zinc-700 bg-zinc-100 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-sm hover:bg-zinc-200 transition-colors w-40">Terms & Conditions</a>
+          </div>
+        </div>
+      </div>
+      <div class="border-t border-zinc-200 dark:border-zinc-700 mt-10 pt-8 text-center text-xs text-zinc-400 dark:text-zinc-500">
+        © 2026 Campt's Collection. Not affiliated with The Pokémon Company.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let allCards = [];
+    let supabaseClient = null;
+
+    // Fetch config and initialize Supabase
+    async function initSupabase() {
+      try {
+        const res = await fetch(`${API_BASE}/api/config`);
+        const config = await res.json();
+        if (config.supabaseUrl && config.supabaseAnonKey) {
+          supabaseClient = supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+          
+          // Subscribe to real-time updates for cards and orders
+          supabaseClient
+            .channel('storefront-public')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'cards' }, payload => {
+              loadCards();
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
+              console.log('Order update detected, refreshing data...');
+              loadRecentBuyers();
+              loadActiveOrders();
+            })
+            .subscribe();
+        }
+      } catch (err) {
+        console.error('Failed to initialize Supabase client:', err);
+      }
+    }
+    initSupabase();
+
+    // XSS protection: escape HTML entities in user-provided data
+    function esc(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = String(str);
+      return div.innerHTML;
+    }
+
+    // Check if admin is logged in
+    function checkAdminAuth() {
+      const token = localStorage.getItem('campt_token');
+      if (token) {
+        document.getElementById('nav-login').classList.add('hidden');
+        document.getElementById('nav-avatar').classList.remove('hidden');
+        document.getElementById('nav-dashboard').classList.remove('hidden');
+      }
+    }
+    checkAdminAuth();
+
+    // Logout
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      localStorage.removeItem('campt_token');
+      window.location.reload();
+    });
+
+    // Cart
+    let cart = JSON.parse(localStorage.getItem('campt_cart') || '[]');
+
+    function updateCart() {
+      document.getElementById('cart-count').textContent = cart.length;
+      if(document.getElementById('floating-cart-count')) document.getElementById('floating-cart-count').textContent = cart.length;
+      localStorage.setItem('campt_cart', JSON.stringify(cart));
+    }
+    updateCart();
+
+    function addToCart(item) {
+      cart.push(item);
+      updateCart();
+      showToast(`"${item.name}" added to cart!`, 'success');
+    }
+
+    // Preview modal
+    let currentPreviewItem = null;
+
+    function openPreview(card) {
+      currentPreviewItem = card;
+      document.getElementById('preview-name').textContent = card.name;
+      document.getElementById('preview-category').textContent = card.category;
+      document.getElementById('preview-price').textContent = card.price;
+      document.getElementById('preview-desc').textContent = card.description || 'Premium Pokémon TCG card from Japan. Authentic and in excellent condition.';
+
+      // Grading
+      const gradingWrap = document.getElementById('preview-grading-wrap');
+      const gradingEl = document.getElementById('preview-grading');
+      if (card.grading) {
+        gradingEl.textContent = card.grading;
+        gradingWrap.classList.remove('hidden');
+      } else {
+        gradingWrap.classList.add('hidden');
+      }
+
+      if (card.image_url) {
+        document.getElementById('preview-image').src = card.image_url;
+        document.getElementById('preview-image').classList.remove('hidden');
+        document.getElementById('preview-placeholder').classList.add('hidden');
+      } else {
+        document.getElementById('preview-image').classList.add('hidden');
+        document.getElementById('preview-placeholder').classList.remove('hidden');
+      }
+
+      // Animate in
+      const modal = document.getElementById('preview-modal');
+      const content = document.getElementById('preview-content');
+      modal.classList.remove('pointer-events-none', 'opacity-0');
+      modal.classList.add('pointer-events-auto', 'opacity-100');
+      content.classList.remove('scale-[0.96]', 'opacity-0');
+      content.classList.add('scale-100', 'opacity-100');
+    }
+
+    function closePreview() {
+      const modal = document.getElementById('preview-modal');
+      const content = document.getElementById('preview-content');
+      content.classList.add('scale-[0.96]', 'opacity-0');
+      content.classList.remove('scale-100', 'opacity-100');
+      modal.classList.add('opacity-0');
+      modal.classList.remove('opacity-100');
+      setTimeout(() => {
+        modal.classList.add('pointer-events-none');
+        modal.classList.remove('pointer-events-auto');
+      }, 200);
+    }
+
+    document.getElementById('preview-add-cart').addEventListener('click', () => {
+      if (currentPreviewItem) {
+        addToCart(currentPreviewItem);
+        closePreview();
+      }
+    });
+
+    document.getElementById('close-preview').addEventListener('click', closePreview);
+
+    // Cart modal
+    document.getElementById('cart-btn').addEventListener('click', () => {
+      const modal = document.getElementById('cart-modal');
+      const panel = document.getElementById('cart-panel');
+      const itemsDiv = document.getElementById('cart-items');
+      const totalSpan = document.getElementById('cart-total');
+
+      if (cart.length === 0) {
+        itemsDiv.innerHTML = '<p class="text-zinc-400 dark:text-zinc-500 text-center py-12 text-sm">Cart is empty</p>';
+        totalSpan.textContent = 'Rp0';
+      } else {
+        let total = 0;
+        itemsDiv.innerHTML = cart.map((item, i) => {
+          const price = parseInt(item.price.replace(/[^0-9]/g, '')) || 0;
+          total += price;
+          return `
+            <div class="flex items-center justify-between py-4 ${i < cart.length - 1 ? 'border-b border-zinc-100 dark:border-zinc-700/50' : ''}">
+              <div>
+                <p class="font-medium text-sm">${esc(item.name)}</p>
+                <p class="text-xs text-zinc-400 dark:text-zinc-500">${esc(item.category)}</p>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="font-semibold text-sm">${esc(item.price)}</span>
+                <button onclick="removeFromCart(${i})" class="text-zinc-400 dark:text-zinc-500 hover:text-red-500 text-sm transition-colors duration-200">&times;</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+        totalSpan.textContent = `Rp${total.toLocaleString()}`;
+      }
+
+      modal.classList.remove('hidden');
+      setTimeout(() => panel.classList.remove('translate-x-full'), 10);
+    });
+
+    document.getElementById('close-cart').addEventListener('click', () => {
+      const modal = document.getElementById('cart-modal');
+      const panel = document.getElementById('cart-panel');
+      panel.classList.add('translate-x-full');
+      setTimeout(() => modal.classList.add('hidden'), 300);
+    });
+
+    document.getElementById('cart-modal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('cart-modal')) {
+        const modal = document.getElementById('cart-modal');
+        const panel = document.getElementById('cart-panel');
+        panel.classList.add('translate-x-full');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+      }
+    });
+
+    function removeFromCart(index) {
+      cart.splice(index, 1);
+      updateCart();
+      document.getElementById('cart-btn').click();
+    }
+
+    function openWhatsApp() {
+      if (cart.length === 0) {
+        showToast('Cart is empty!', 'error');
+        return;
+      }
+      const items = cart.map(i => `- ${i.name} (${i.price})`).join('%0A');
+      const total = cart.reduce((sum, i) => sum + (parseInt(i.price.replace(/[^0-9]/g, '')) || 0), 0);
+      const msg = `Halo! Mau tanya tentang item ini:%0A${items}%0A%0ATotal: Rp${total.toLocaleString()}%0A%0AMasih available?`;
+      window.open(`https://api.whatsapp.com/send/?phone=6285815801715&text=${encodeURIComponent(msg)}`, '_blank');
+    }
+
+    // Toast notification
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+
+      const icons = {
+        success: `<svg class="w-5 h-5 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`,
+        error: `<svg class="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`,
+        info: `<svg class="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`
+      };
+
+      toast.className = `toast-enter flex items-center gap-3 bg-white dark:bg-zinc-800 px-5 py-4 rounded-lg border border-zinc-200 dark:border-zinc-700 min-w-[300px] max-w-[400px]`;
+      toast.innerHTML = `
+        ${icons[type]}
+        <span class="text-sm font-medium text-zinc-800 dark:text-zinc-200">${message}</span>
+      `;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.remove('toast-enter');
+        toast.classList.add('toast-exit');
+        setTimeout(() => toast.remove(), 300);
+      }, 2500);
+    }
+
+    // Confirm dialog — custom modal, no native confirm()
+    function showConfirm(message) {
+      return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'fixed inset-0 bg-black/30 z-[200] flex items-center justify-center p-4';
+        overlay.innerHTML = `<div class="bg-white dark:bg-zinc-800 rounded-xl max-w-sm w-full p-6 border border-zinc-200 dark:border-zinc-700 shadow-xl">
+          <p class="text-sm text-zinc-700 mb-6">${esc(message)}</p>
+          <div class="flex justify-end gap-2">
+            <button id="confirm-cancel" class="px-4 py-2 text-sm font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:text-zinc-100 transition-colors rounded-lg hover:bg-zinc-50 dark:bg-zinc-900/50">Cancel</button>
+            <button id="confirm-ok" class="px-4 py-2 text-sm font-medium bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors">Confirm</button>
+          </div>
+        </div>`;
+        document.body.appendChild(overlay);
+        const cleanup = () => overlay.remove();
+        overlay.querySelector('#confirm-cancel').addEventListener('click', () => { cleanup(); resolve(false); });
+        overlay.querySelector('#confirm-ok').addEventListener('click', () => { cleanup(); resolve(true); });
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) { cleanup(); resolve(false); } });
+      });
+    }
+
+    // SVG card placeholder for cards without images
+    function getCardPlaceholder() {
+      return `<svg class="w-16 h-16 text-zinc-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <rect x="3" y="3" width="18" height="18" rx="2" stroke-width="1.5"/>
+        <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+        <path d="M21 15l-5-5L5 21" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+    }
+
+    // Cart SVG icon
+    const cartIcon = `<svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/>
+    </svg>`;
+
+    // Load cards from API (max 4 for homepage)
+    async function loadCards() {
+      try {
+        const res = await fetch(`${API_BASE}/api/cards?status=active`);
+        allCards = await res.json();
+        renderCards(allCards.slice(0, 4)); // Only show 4 cards
+      } catch (err) {
+        console.error('Failed to load cards:', err);
+        document.getElementById('loading').textContent = 'Failed to load cards. Is the server running?';
+      }
+    }
+
+    // Render cards (simplified - no pagination)
+    function renderCards(cards) {
+      const grid = document.getElementById('cards-grid');
+      const loading = document.getElementById('loading');
+      const empty = document.getElementById('empty-gallery');
+
+      loading.classList.add('hidden');
+
+      // Show only active cards, max 4 for homepage
+      const filtered = cards.filter(c => c.status !== 'inactive').slice(0, 4);
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+      }
+
+      empty.classList.add('hidden');
+      renderCardGrid(filtered);
+    }
+
+    function renderCardGrid(cards) {
+      const grid = document.getElementById('cards-grid');
+      grid.innerHTML = cards.map((card, i) => `
+        <div class="card-hover bg-white dark:bg-zinc-800 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-700 transition-all duration-500 card-enter group" style="animation-delay: ${i * 30}ms">
+          <div class="aspect-[3/4] bg-zinc-50 dark:bg-zinc-900/50 relative overflow-hidden">
+            ${card.image_url
+              ? `<img src="${esc(card.image_url)}" alt="${esc(card.name)}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]">`
+              : `<div class="w-full h-full flex items-center justify-center text-zinc-200">${getCardPlaceholder()}</div>`
+            }
+            ${card.grading ? `<div class="absolute top-3 left-3 bg-white dark:bg-zinc-800 px-2.5 py-1 rounded-md text-[10px] font-semibold text-zinc-800 dark:text-zinc-200 tracking-wide uppercase border border-zinc-200 dark:border-zinc-700">${esc(card.grading)}</div>` : ''}
+            ${card.status === 'sold' ? `<div class="absolute inset-0 bg-black/50 flex items-center justify-center"><span class="bg-white dark:bg-zinc-800 text-black px-5 py-2 text-[11px] font-bold tracking-[0.15em] uppercase rounded-full">Sold Out</span></div>` : ''}
+          </div>
+          <div class="p-5">
+            <div class="flex items-center justify-between mb-2.5">
+              <span class="text-[10px] font-semibold text-poke-red uppercase tracking-[0.15em]">${esc(card.category)}</span>
+              <span class="text-[10px] font-medium text-zinc-300 uppercase tracking-wider">${esc(card.origin || 'JP')}</span>
+            </div>
+            <h3 class="font-medium text-[13px] text-zinc-700 mb-1.5 leading-relaxed">${esc(card.name)}</h3>
+            <p class="text-[16px] font-semibold text-zinc-900 dark:text-zinc-100 mb-5">${esc(card.price)}</p>
+            ${card.status === 'sold'
+              ? `<button disabled class="w-full py-3 bg-zinc-50 dark:bg-zinc-900/50 text-zinc-300 text-[11px] font-bold rounded-lg cursor-not-allowed uppercase tracking-[0.15em]">Sold Out</button>`
+              : `<button data-card-id="${card.id}" class="w-full py-3 bg-[#111] text-white text-[11px] font-medium rounded-lg hover:bg-poke-red transition-colors duration-300 uppercase tracking-[0.15em]">View Details</button>`
+            }
+          </div>
+        </div>
+      `).join('');
+    
+      setTimeout(() => {
+        if(typeof VanillaTilt !== 'undefined') {
+          VanillaTilt.init(document.querySelectorAll(".card-hover"), {
+            max: 15,
+            speed: 400,
+            glare: true,
+            "max-glare": 0.35,
+            scale: 1.02
+          });
+        }
+      }, 50);
+    }
+
+
+    // View Details buttons (event delegation on grid)
+    document.getElementById('cards-grid').addEventListener('click', (e) => {
+      const btn = e.target.closest('.view-details-btn') || e.target.closest('[data-card-id]');
+      if (!btn) return;
+      const cardId = parseInt(btn.dataset.cardId);
+      const card = allCards.find(c => c.id === cardId);
+      if (card) openPreview(card);
+    });
+
+    // ==================== 3D POKÉBALL ====================
+    const canvas = document.getElementById('pokeball-canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const CX = W / 2, CY = H / 2;
+    const RADIUS = 190;
+    const PIXEL_SIZE = 6;
+
+    let rotX = -0.3, rotY = 0.5;
+    let isDragging = false;
+    let lastMouse = { x: 0, y: 0 };
+    let resumeTimer = null;
+
+    function getPokeballColor(nx, ny, nz) {
+      const bandWidth = 0.06;
+      const buttonRadius = 0.18;
+      const distToCenter = Math.sqrt(nx * nx + (ny * ny) * 4);
+
+      if (Math.abs(ny) < bandWidth && nz > 0) {
+        if (distToCenter < buttonRadius * 0.6) return { r: 255, g: 255, b: 255 };
+        return { r: 26, g: 26, b: 26 };
+      }
+      if (ny < -bandWidth) {
+        const light = 0.5 + 0.5 * Math.max(0, -ny * 0.5 + nz * 0.5);
+        return { r: Math.round(220 * light), g: Math.round(20 * light), b: Math.round(20 * light) };
+      }
+      if (ny > bandWidth) {
+        const light = 0.5 + 0.5 * Math.max(0, ny * 0.3 + nz * 0.7);
+        return { r: Math.round(245 * light), g: Math.round(245 * light), b: Math.round(250 * light) };
+      }
+      return { r: 100, g: 100, b: 100 };
+    }
+
+    function rotateY(x, y, z, a) {
+      const c = Math.cos(a), s = Math.sin(a);
+      return { x: x * c + z * s, y, z: -x * s + z * c };
+    }
+    function rotateX(x, y, z, a) {
+      const c = Math.cos(a), s = Math.sin(a);
+      return { x, y: y * c - z * s, z: y * s + z * c };
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(CX, CY + RADIUS + 30, RADIUS * 0.7, 15, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0,0,0,0.15)';
+      ctx.fill();
+      ctx.restore();
+
+      for (let px = -RADIUS; px < RADIUS; px += PIXEL_SIZE) {
+        for (let py = -RADIUS; py < RADIUS; py += PIXEL_SIZE) {
+          if (Math.sqrt(px * px + py * py) > RADIUS) continue;
+          const z = Math.sqrt(RADIUS * RADIUS - px * px - py * py);
+          const nx = px / RADIUS, ny = py / RADIUS, nz = z / RADIUS;
+          let p = rotateY(nx, ny, nz, rotY);
+          p = rotateX(p.x, p.y, p.z, rotX);
+          const color = getPokeballColor(p.x, p.y, p.z);
+          const brightness = 0.6 + 0.4 * nz;
+          ctx.fillStyle = `rgb(${Math.round(color.r * brightness)},${Math.round(color.g * brightness)},${Math.round(color.b * brightness)})`;
+          ctx.fillRect(CX + px, CY + py, PIXEL_SIZE - 1, PIXEL_SIZE - 1);
+        }
+      }
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(CX - RADIUS * 0.3, CY - RADIUS * 0.35, RADIUS * 0.15, RADIUS * 0.1, -0.4, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.fill();
+      ctx.restore();
+    }
+
+    canvas.addEventListener('mousedown', (e) => { isDragging = true; if (resumeTimer) clearTimeout(resumeTimer); lastMouse = { x: e.clientX, y: e.clientY }; });
+    window.addEventListener('mousemove', (e) => { if (!isDragging) return; rotY += (e.clientX - lastMouse.x) * 0.01; rotX += (e.clientY - lastMouse.y) * 0.01; lastMouse = { x: e.clientX, y: e.clientY }; draw(); });
+    window.addEventListener('mouseup', () => { isDragging = false; resumeTimer = setTimeout(() => { resumeTimer = null; }, 2000); });
+    canvas.addEventListener('touchstart', (e) => { isDragging = true; if (resumeTimer) clearTimeout(resumeTimer); lastMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY }; });
+    window.addEventListener('touchmove', (e) => { if (!isDragging) return; rotY += (e.touches[0].clientX - lastMouse.x) * 0.01; rotX += (e.touches[0].clientY - lastMouse.y) * 0.01; lastMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY }; draw(); });
+    window.addEventListener('touchend', () => { isDragging = false; resumeTimer = setTimeout(() => { resumeTimer = null; }, 2000); });
+
+    function animate() {
+      if (!isDragging && !resumeTimer) { rotY -= 0.005; }
+      draw();
+      requestAnimationFrame(animate);
+    }
+    draw();
+    animate();
+
+    // Init
+    loadCards();
+    loadRecentBuyers();
+    loadActiveOrders();
+
+    // Load recent buyers (social proof)
+    async function loadRecentBuyers() {
+      try {
+        const res = await fetch(`${API_BASE}/api/recent-buyers`);
+        const buyers = await res.json();
+        const container = document.getElementById('recent-buyers');
+        const emptyMsg = document.getElementById('no-recent-buyers');
+
+        if (!buyers || buyers.length === 0) {
+          container.classList.add('hidden');
+          emptyMsg.classList.remove('hidden');
+          return;
+        }
+
+        container.classList.remove('hidden');
+        emptyMsg.classList.add('hidden');
+        container.innerHTML = buyers.map(b => `
+          <div class="bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 p-5">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs text-zinc-400 dark:text-zinc-500">${esc(b.order_id)}</span>
+              <span class="text-[10px] text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded-full">Completed</span>
+            </div>
+            <p class="font-medium text-sm">${esc(b.customer_name)}</p>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 mt-1">${esc(b.item_names.join(', '))}</p>
+            <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-2">${esc(b.date)}</p>
+          </div>
+        `).join('');
+      
+      setTimeout(() => {
+        if(typeof VanillaTilt !== 'undefined') {
+          VanillaTilt.init(document.querySelectorAll(".card-hover"), {
+            max: 15,
+            speed: 400,
+            glare: true,
+            "max-glare": 0.35,
+            scale: 1.02
+          });
+        }
+      }, 50);
+    }
+ catch (err) {
+        console.error('Failed to load recent buyers:', err);
+      }
+    }
+
+    // Load active orders (live tracker)
+    async function loadActiveOrders() {
+      try {
+        const res = await fetch(`${API_BASE}/api/active-orders`);
+        const orders = await res.json();
+        const tbody = document.getElementById('active-orders-table');
+        const emptyMsg = document.getElementById('no-active-orders');
+
+        if (!orders || orders.length === 0) {
+          tbody.parentElement.classList.add('hidden');
+          emptyMsg.classList.remove('hidden');
+          return;
+        }
+
+        tbody.parentElement.classList.remove('hidden');
+        emptyMsg.classList.add('hidden');
+        tbody.innerHTML = orders.slice(0, 3).map(o => `
+          <tr class="table-row-hover">
+            <td class="px-6 py-3.5 text-sm font-medium">${esc(o.customer_name)}</td>
+            <td class="px-6 py-3.5 text-xs text-zinc-500 dark:text-zinc-400 dark:text-zinc-500">${esc(o.item_names.join(', '))}</td>
+            <td class="px-6 py-3.5 text-sm font-medium">Rp${(o.total || 0).toLocaleString()}</td>
+            <td class="px-6 py-3.5 text-xs"><span class="status-dot ${esc(o.status)}"></span><span class="capitalize text-zinc-700 font-medium">${esc(o.status_label)}</span></td>
+            <td class="px-6 py-3.5 text-xs text-zinc-400 dark:text-zinc-500">${esc(o.date)}</td>
+          </tr>
+        `).join('');
+      
+      setTimeout(() => {
+        if(typeof VanillaTilt !== 'undefined') {
+          VanillaTilt.init(document.querySelectorAll(".card-hover"), {
+            max: 15,
+            speed: 400,
+            glare: true,
+            "max-glare": 0.35,
+            scale: 1.02
+          });
+        }
+      }, 50);
+    }
+ catch (err) {
+        console.error('Failed to load active orders:', err);
+      }
+    }
+  </script>
+
+  
+
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const faqList = document.getElementById('faq-list');
+      const squirtle = document.getElementById('faq-squirtle');
+      if (faqList && squirtle) {
+        const buttons = faqList.querySelectorAll('button');
+        faqList.addEventListener('mouseleave', () => {
+          squirtle.style.opacity = '0';
+        });
+        buttons.forEach((btn) => {
+          btn.addEventListener('mouseenter', () => {
+            squirtle.style.opacity = '0.9';
+            squirtle.style.top = (btn.offsetTop + 10) + 'px';
+          });
+        });
+      }
+    });
+  </script>
+  </div>
+
+  <!-- Floating WhatsApp Button -->
+  <a href="https://api.whatsapp.com/send/?phone=6285815801715&text&type=phone_number&app_absent=0" target="_blank"
+     class="fixed bottom-6 right-6 bg-[#25D366] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform z-[100] group">
+    <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.878-.788-1.471-1.761-1.643-2.06-.173-.298-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+    <!-- Always visible text bubble next to WA button -->
+    <span class="absolute right-16 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm px-4 py-2 rounded-xl shadow-md border border-zinc-100 dark:border-zinc-700/50 font-medium whitespace-nowrap opacity-100">
+      Need Help?
+    </span>
+  </a>
+
+  <!-- Gengar Dark Mode Switch -->
+  <button id="theme-toggle" class="fixed bottom-6 left-6 w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform z-[100] bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:outline-none">
+    <img id="theme-toggle-light-icon" src="/images/gengar_sleeping.png" class="w-10 h-10 hidden" alt="Light Mode">
+    <img id="theme-toggle-dark-icon" src="/images/gengar_awake.png" class="w-10 h-10 hidden" alt="Dark Mode">
+  </button>
+  
+  <script>
+    const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+    const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+
+    if (document.documentElement.classList.contains('dark')) {
+        themeToggleDarkIcon.classList.remove('hidden');
+    } else {
+        themeToggleLightIcon.classList.remove('hidden');
+    }
+
+    const themeToggleBtn = document.getElementById('theme-toggle');
+
+    themeToggleBtn.addEventListener('click', function() {
+        themeToggleDarkIcon.classList.toggle('hidden');
+        themeToggleLightIcon.classList.toggle('hidden');
+
+        if (document.documentElement.classList.contains('dark')) {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('color-theme', 'light');
+        } else {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('color-theme', 'dark');
+        }
+    });
+  
+    // Floating Cart Logic
+    window.addEventListener('scroll', () => {
+      const mainCartBtn = document.getElementById('cart-btn');
+      const floatingBtn = document.getElementById('floating-cart-btn');
+      if (mainCartBtn && floatingBtn) {
+        const rect = mainCartBtn.getBoundingClientRect();
+        // Show floating if main cart is out of viewport (rect.bottom < 0)
+        if (rect.bottom < 0) {
+          floatingBtn.classList.remove('scale-0');
+          floatingBtn.classList.add('scale-100');
+        } else {
+          floatingBtn.classList.add('scale-0');
+          floatingBtn.classList.remove('scale-100');
+        }
+      }
+    });
+
+    const fbtn = document.getElementById('floating-cart-btn');
+    if (fbtn) {
+      fbtn.addEventListener('click', () => {
+        document.getElementById('cart-btn').click();
+      });
+    }
+
+</script>
+</body>
+
+</html>

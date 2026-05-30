@@ -1,0 +1,38 @@
+/* 3D Pixelated Floating Pokemon */
+
+.pokemon-bg-container {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 20; /* High enough to be above bg-white sections (z-10), low enough not to block header (z-50) */
+}
+
+.floating-pokemon {
+  position: absolute; 
+  mix-blend-mode: multiply; 
+  opacity: 0.35;
+  animation: float 10s ease-in-out infinite;
+  filter: contrast(1.1) brightness(1.05);
+}
+
+@keyframes float {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-25px) rotate(2deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+/* Scattered positions vertically down the document */
+/* Spaced ~400px apart to prevent overlapping (jangan saling numpuk) */
+.poke-pos-1 { top: 150px; left: 2%; width: 180px; animation-delay: 0s; }
+.poke-pos-2 { top: 500px; right: 3%; width: 220px; animation-delay: -2s; }
+.poke-pos-3 { top: 950px; left: -1%; width: 160px; animation-delay: -5s; }
+.poke-pos-4 { top: 1350px; right: 1%; width: 200px; animation-delay: -1s; }
+.poke-pos-5 { top: 1800px; left: 3%; width: 190px; animation-delay: -7s; }
+.poke-pos-6 { top: 2250px; right: -2%; width: 240px; animation-delay: -3s; }
+.poke-pos-7 { top: 2650px; left: 1%; width: 170px; animation-delay: -8s; }
+.poke-pos-8 { top: 3100px; right: 4%; width: 150px; animation-delay: -4s; }
+.poke-pos-9 { top: 3500px; left: -2%; width: 210px; animation-delay: -6s; }
+.poke-pos-10 { top: 3950px; right: 2%; width: 180px; animation-delay: -2s; }
+.poke-pos-11 { top: 4350px; left: 2%; width: 200px; animation-delay: -1s; }
+.poke-pos-12 { top: 4800px; right: 1%; width: 220px; animation-delay: -5s; }

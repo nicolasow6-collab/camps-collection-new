@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Campt's Collection</title>
+  <link rel="icon" type="image/svg+xml" href="/pokeball.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+          colors: { poke: { red: '#CC0000', darkred: '#9E0000', black: '#111111' } }
+        }
+      }
+    }
+  </script>
+  <style>
+    .form-input:focus { border-color: #18181b; outline: none; }
+    .brand-left { background: #f4f4f5; }
+  </style>
+  <link rel="stylesheet" href="/global.css">
+
+  <script>
+    if (localStorage.getItem('color-theme') === 'dark') {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
+</head>
+<body class="relative font-sans antialiased dark:bg-zinc-900 dark:text-zinc-100 transition-colors duration-500">
+  <div class="overflow-x-hidden">
+
+  <img src="/images/pikachu_voxel.png" class="absolute top-10 right-0 w-40 opacity-15 mix-blend-multiply dark:opacity-40 dark:mix-blend-normal pointer-events-none animate-[float_8s_ease-in-out_infinite] z-0" style="filter: contrast(1.1) brightness(1.05);" alt="">
+  <img src="/images/togepi_peeking.png" class="absolute bottom-10 left-10 w-24 opacity-15 mix-blend-multiply dark:opacity-40 dark:mix-blend-normal pointer-events-none animate-[bounce_4s_infinite] z-0" style="filter: contrast(1.1) brightness(1.05);" alt="">
+  <img src="/images/charizard_voxel.png" class="absolute bottom-0 -right-10 w-48 opacity-15 mix-blend-multiply dark:opacity-40 dark:mix-blend-normal pointer-events-none animate-[float_10s_ease-in-out_infinite] z-0" style="filter: contrast(1.1) brightness(1.05);" alt="">
+  <img src="/images/gengar_voxel.png" class="absolute top-40 left-0 w-32 opacity-15 mix-blend-multiply dark:opacity-40 dark:mix-blend-normal pointer-events-none animate-[float_9s_ease-in-out_infinite] z-0" style="filter: contrast(1.1) brightness(1.05);" alt="">
+
+
+
+  
+
+
+
+  <div class="flex min-h-screen">
+    <!-- Left: Branding -->
+    <div class="hidden lg:flex lg:w-1/2 brand-left items-center justify-center p-12">
+      <div class="text-center max-w-sm">
+        <img src="/logo.jpg" alt="Campt's Collection" class="h-24 w-auto mx-auto mb-6 rounded-lg dark:bg-white dark:p-1 dark:rounded-lg">
+        <h1 class="text-3xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight mb-2">Campt's Collection</h1>
+        <p class="text-zinc-400 dark:text-zinc-500 text-sm leading-relaxed">Curated Pokémon TCG cards, sourced from Japan.</p>
+      </div>
+    </div>
+
+    <!-- Right: Login Form -->
+    <div class="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12">
+      <div class="w-full max-w-sm">
+        <!-- Mobile logo (hidden on desktop) -->
+        <div class="lg:hidden text-center mb-8">
+          <img src="/logo.jpg" alt="Logo" class="h-12 w-auto mx-auto mb-4 rounded-lg dark:bg-white dark:p-1 dark:rounded-lg">
+          <h1 class="text-xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">Campt's Collection</h1>
+          <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-1">Admin Panel</p>
+        </div>
+
+        <!-- Desktop heading -->
+        <div class="hidden lg:block mb-8">
+          <h2 class="text-2xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">Sign in</h2>
+          <p class="text-sm text-zinc-400 dark:text-zinc-500 mt-1">Enter your admin credentials to continue.</p>
+        </div>
+
+        <!-- Form -->
+        <form id="login-form" class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 mb-1.5">Email</label>
+            <input type="email" id="email" required placeholder="Enter email address"
+                   class="form-input w-full px-3 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm bg-white dark:bg-zinc-800 transition-colors">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-zinc-500 dark:text-zinc-400 dark:text-zinc-500 mb-1.5">Password</label>
+            <input type="password" id="password" required placeholder="Enter password"
+                   class="form-input w-full px-3 py-2.5 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm bg-white dark:bg-zinc-800 transition-colors">
+          </div>
+          <button type="submit" id="login-btn"
+                  class="w-full py-2.5 bg-zinc-900 text-white font-medium rounded-lg hover:bg-zinc-800 transition-colors text-sm">
+            Sign In
+          </button>
+          <p id="error-msg" class="hidden text-sm text-red-500 text-center"></p>
+        </form>
+
+        <p class="text-center text-xs text-zinc-400 dark:text-zinc-500 mt-8">
+          <a href="/" class="hover:text-zinc-900 dark:text-zinc-100 transition-colors">← Back to Store</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let supabaseClient = null;
+
+    async function initAuth() {
+      try {
+        const configRes = await fetch(`${API_BASE}/api/config`);
+        const config = await configRes.json();
+        supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+
+        // Redirect if already logged in
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) {
+          localStorage.setItem('campt_token', session.access_token);
+          window.location.href = '/admin.html';
+        }
+      } catch (err) {
+        console.error('Failed to init Supabase:', err);
+      }
+    }
+
+    initAuth();
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!supabaseClient) return;
+
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const btn = document.getElementById('login-btn');
+      const errEl = document.getElementById('error-msg');
+
+      btn.disabled = true;
+      btn.textContent = 'Signing in...';
+      errEl.classList.add('hidden');
+
+      try {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if (error) {
+          errEl.textContent = error.message || 'Login failed';
+          errEl.classList.remove('hidden');
+          return;
+        }
+
+        // Save token for legacy endpoints
+        localStorage.setItem('campt_token', data.session.access_token);
+        localStorage.setItem('campt_user', JSON.stringify({ email: data.user.email }));
+        window.location.href = '/admin.html';
+      } catch (err) {
+        errEl.textContent = 'Connection error. Is the server running?';
+        errEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+      }
+    });
+  </script>
+  </div>
+
+  <!-- Floating WhatsApp Button -->
+  <a href="https://api.whatsapp.com/send/?phone=6285815801715&text&type=phone_number&app_absent=0" target="_blank"
+     class="fixed bottom-6 right-6 bg-[#25D366] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform z-[100] group">
+    <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.878-.788-1.471-1.761-1.643-2.06-.173-.298-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+    <!-- Always visible text bubble next to WA button -->
+    <span class="absolute right-16 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-sm px-4 py-2 rounded-xl shadow-md border border-zinc-100 dark:border-zinc-700/50 font-medium whitespace-nowrap opacity-100">
+      Need Help?
+    </span>
+  </a>
+
+  <!-- Gengar Dark Mode Switch -->
+  <button id="theme-toggle" class="fixed bottom-6 left-6 w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform z-[100] bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:outline-none">
+    <img id="theme-toggle-light-icon" src="/images/gengar_sleeping.png" class="w-10 h-10 hidden" alt="Light Mode">
+    <img id="theme-toggle-dark-icon" src="/images/gengar_awake.png" class="w-10 h-10 hidden" alt="Dark Mode">
+  </button>
+  
+  <script>
+    const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+    const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+
+    if (document.documentElement.classList.contains('dark')) {
+        themeToggleDarkIcon.classList.remove('hidden');
+    } else {
+        themeToggleLightIcon.classList.remove('hidden');
+    }
+
+    const themeToggleBtn = document.getElementById('theme-toggle');
+
+    themeToggleBtn.addEventListener('click', function() {
+        themeToggleDarkIcon.classList.toggle('hidden');
+        themeToggleLightIcon.classList.toggle('hidden');
+
+        if (document.documentElement.classList.contains('dark')) {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('color-theme', 'light');
+        } else {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('color-theme', 'dark');
+        }
+    });
+  </script>
+</body>
+
+</html>
