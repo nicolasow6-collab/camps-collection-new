@@ -576,9 +576,11 @@ app.get('/api/admin/stats', authenticateToken, async (req, res) => {
 });
 
 // ========== START SERVER ==========
-app.listen(PORT, () => {
-  console.log(`🚀 Campt's Collection server running on http://localhost:${PORT}`);
-  console.log(`📦 Admin panel: http://localhost:${PORT}/admin.html`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Campt's Collection server running on http://localhost:${PORT}`);
+    console.log(`📦 Admin panel: http://localhost:${PORT}/admin.html`);
+  });
+}
 
 module.exports = app;
