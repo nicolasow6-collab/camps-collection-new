@@ -637,6 +637,79 @@ app.use((req, res, next) => {
 });
 
 // ========== STATS ROUTE ==========
+// ========== API METRICS MIDDLEWARE (track all non-auth API calls) ==========
+let metricsInitialized = false;
+
+async function initMetrics() {
+  if (metricsInitialized) return;
+  const { error } = await supabase
+    .from('api_metrics')
+    .insert({ id: 1, first_call_date: new Date().toISOString(), active_days: [], total_api_calls: 0 })
+    .onConflict('id')
+    .ignore();
+  if (error && error.code !== '23505') {
+    console.error('Failed to init metrics:', error.message);
+  }
+  metricsInitialized = true;
+}
+
+async function trackApiCall() {
+  try {
+    await initMetrics();
+    const today = new Date().toISOString().split('T')[0];
+    
+    const { data, error } = await supabase.rpc('increment_api_metric', { today: today });
+    if (error) {
+      const { data: current } = await supabase.from('api_metrics').select('active_days, total_api_calls').eq('id', 1).single();
+      if (current) {
+        const days = current.active_days || [];
+        if (!days.includes(today)) days.push(today);
+        await supabase.from('api_metrics')
+          .update({ 
+            total_api_calls: (current.total_api_calls || 0) + 1,
+            active_days: days,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', 1);
+      }
+    }
+  } catch (err) {
+    console.error('Metrics tracking error:', err.message);
+  }
+}
+
+app.use('/api', async (req, res, next) => {
+  if (req.path.startsWith('/api/auth') || req.path === '/api/config' || req.path === '/api/metrics') {
+    return next();
+  }
+  await trackApiCall();
+  next();
+});
+
+// ========== METRICS ENDPOINT ==========
+app.get('/api/metrics', async (req, res) => {
+  try {
+    const { data } = await supabase.from('api_metrics').select('*').eq('id', 1).single();
+    if (!data) {
+      return res.json({ total_api_calls: 0, active_days_count: 0, days_since_first_call: 0, first_call_date: null });
+    }
+    
+    const firstDate = new Date(data.first_call_date);
+    const now = new Date();
+    const daysSince = Math.floor((now - firstDate) / (1000 * 60 * 60 * 24));
+    const activeDaysCount = (data.active_days || []).length;
+    
+    res.json({
+      total_api_calls: data.total_api_calls || 0,
+      active_days_count: activeDaysCount,
+      days_since_first_call: daysSince,
+      first_call_date: data.first_call_date
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch metrics', details: err.message });
+  }
+});
+
 app.get('/api/admin/stats', authenticateToken, async (req, res) => {
   const { count: total, error: errTotal } = await supabase.from('cards').select('*', { count: 'exact', head: true });
   const { count: active, error: errActive } = await supabase.from('cards').select('*', { count: 'exact', head: true }).eq('status', 'active');
