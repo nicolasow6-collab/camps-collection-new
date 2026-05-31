@@ -563,6 +563,79 @@ app.delete('/api/admin/cards/:id', authenticateToken, async (req, res) => {
   res.json({ message: 'Card deleted' });
 });
 
+// ========== API METRICS TRACKING (persistent across refreshes) ==========
+let apiMetricsCache = null;
+
+async function trackApiCall() {
+  if (!supabase) return;
+  const today = new Date().toISOString().split('T')[0];
+  try {
+    const { data: metrics } = await supabase.from('api_metrics').select('*').limit(1).single();
+    if (!metrics) {
+      await supabase.from('api_metrics').insert({
+        first_call_date: today,
+        active_days: [today],
+        total_api_calls: 1
+      });
+      apiMetricsCache = { first_call_date: today, active_days: [today], total_api_calls: 1 };
+      return;
+    }
+    const activeDays = metrics.active_days || [];
+    const isActiveDay = activeDays.includes(today);
+    const newDays = isActiveDay ? activeDays : [...activeDays, today];
+    const { data: updated } = await supabase
+      .from('api_metrics')
+      .update({
+        active_days: newDays,
+        total_api_calls: (metrics.total_api_calls || 0) + 1,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', metrics.id)
+      .select()
+      .single();
+    apiMetricsCache = updated;
+  } catch (e) {
+    console.error('trackApiCall error:', e.message);
+  }
+}
+
+app.get('/api/metrics', async (req, res) => {
+  try {
+    if (apiMetricsCache) {
+      const days = apiMetricsCache.active_days || [];
+      const firstDate = apiMetricsCache.first_call_date;
+      const totalDays = firstDate ? Math.ceil((Date.now() - new Date(firstDate).getTime()) / 86400000) : 0;
+      return res.json({
+        total_api_calls: apiMetricsCache.total_api_calls || 0,
+        active_days: days.length,
+        days_since_first_call: totalDays,
+        first_call_date: firstDate
+      });
+    }
+    const { data: metrics } = await supabase.from('api_metrics').select('*').limit(1).single();
+    if (!metrics) return res.json({ total_api_calls: 0, active_days: 0, days_since_first_call: 0, first_call_date: null });
+    const days = metrics.active_days || [];
+    const firstDate = metrics.first_call_date;
+    const totalDays = firstDate ? Math.ceil((Date.now() - new Date(firstDate).getTime()) / 86400000) : 0;
+    res.json({
+      total_api_calls: metrics.total_api_calls || 0,
+      active_days: days.length,
+      days_since_first_call: totalDays,
+      first_call_date: firstDate
+    });
+  } catch (e) {
+    res.json({ total_api_calls: 0, active_days: 0, days_since_first_call: 0, first_call_date: null });
+  }
+});
+
+// Track API calls on non-auth endpoints (middleware)
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/') && !req.path.includes('/auth/') && !req.path.includes('/metrics')) {
+    trackApiCall();
+  }
+  next();
+});
+
 // ========== STATS ROUTE ==========
 app.get('/api/admin/stats', authenticateToken, async (req, res) => {
   const { count: total, error: errTotal } = await supabase.from('cards').select('*', { count: 'exact', head: true });

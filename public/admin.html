@@ -186,8 +186,8 @@
 
     <!-- ========== DASHBOARD TAB ========== -->
     <div id="content-dashboard">
-      <!-- Stats: Clean, no colored badges, no colored numbers -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <!-- Stats Row -->
+      <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <div class="stat-card bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
           <p class="text-xs font-medium text-zinc-400 dark:text-zinc-500 mb-1 uppercase tracking-wider">Revenue Today</p>
           <p id="stat-revenue-today" class="text-2xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">Rp0</p>
@@ -203,6 +203,11 @@
         <div class="stat-card bg-white dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700 p-5">
           <p class="text-xs font-medium text-zinc-400 dark:text-zinc-500 mb-1 uppercase tracking-wider">Total Orders</p>
           <p id="stat-orders-total" class="text-2xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">0</p>
+        </div>
+        <div class="stat-card bg-gradient-to-br from-zinc-900 to-zinc-800 rounded-xl border border-zinc-700 p-5">
+          <p class="text-xs font-medium text-zinc-400 mb-1 uppercase tracking-wider">API Calls</p>
+          <p id="stat-api-calls" class="text-2xl font-bold text-white tracking-tight">0</p>
+          <p class="text-[10px] text-zinc-500 mt-1"><span id="stat-api-days">0</span> days · <span id="stat-api-since">0</span> days active</p>
         </div>
       </div>
 
@@ -577,6 +582,17 @@
         document.getElementById('stat-revenue-month').textContent = `Rp${revenueMonth.toLocaleString()}`;
         document.getElementById('stat-orders-today').textContent = todayOrders.length;
         document.getElementById('stat-orders-total').textContent = orders.length;
+
+        // Load persistent API metrics
+        try {
+          const metricsRes = await fetch(`${API_BASE}/api/metrics`);
+          const metrics = await metricsRes.json();
+          document.getElementById('stat-api-calls').textContent = (metrics.total_api_calls || 0).toLocaleString();
+          document.getElementById('stat-api-days').textContent = metrics.days_since_first_call || 0;
+          document.getElementById('stat-api-since').textContent = metrics.active_days || 0;
+        } catch (e) {
+          console.error('Failed to load API metrics:', e);
+        }
 
         renderRecentOrders(orders.slice(0, 5));
         renderAllOrders();
